@@ -1,5 +1,4 @@
 use bitcoin_hashes::sha256;
-use log::info;
 use nostr::util;
 use secp256k1::rand::rngs::OsRng;
 use secp256k1::Secp256k1;
@@ -10,7 +9,6 @@ use std::str::FromStr;
 use std::time::Instant;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    env_logger::init();
     let args: Vec<String> = env::args().collect();
     let difficulty = args.get(1);
 
@@ -21,7 +19,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             .parse()
             .expect("You must enter a number less than 255");
     }
-    info!("Started mining process with a difficulty of: {pow_difficulty}");
+    println!("Started mining process with a difficulty of: {pow_difficulty}");
 
     // Loop: generate public keys until desired number of leading zeroes is reached
     let now = Instant::now();
@@ -41,12 +39,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         if leading_zeroes >= pow_difficulty {
             found_valid_hash = true;
 
-            info!("Found matching public key: {hash}");
-            info!("Leading zero bits: {leading_zeroes} (min. required: {pow_difficulty})");
+            println!("Found matching public key: {hash}");
+            println!("Leading zero bits: {leading_zeroes} (min. required: {pow_difficulty})");
             let iter_string = format!("{iterations}");
             let l = iter_string.len();
             let f = iter_string.chars().next().unwrap();
-            info!(
+            println!(
                 "{} iterations (about {}x10^{} hashes) in {} seconds. Avg rate {} hashes/second",
                 iterations,
                 f,
@@ -55,7 +53,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 iterations * 1000 / max(1, now.elapsed().as_millis())
             );
             let private = secret_key.display_secret().to_string();
-            info!("Nostr private key: {private}");
+            println!("Nostr private key: {private}");
         }
     }
 
