@@ -7,5 +7,5 @@ authors = ["Francisco Calderón <fjcalderon@gmail.com>"]
 
 [dependencies]
 bitcoin_hashes = "0.11.0"
-nostr = { git = "https://github.com/ok300/nostr-rs.git", commit = "8418b7497dfdf33ace1eb62210266a502d02d4d4" }
+nostr = { git = "https://github.com/grunch/nostr-rs.git", commit = "b3cb95620a3dab5850690e9e77d54b7647f1bfdb" }
 secp256k1 = "0.24.0"
