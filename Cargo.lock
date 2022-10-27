@@ -332,6 +332,7 @@ checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
 [[package]]
 name = "nostr"
 version = "0.1.0"
+source = "git+https://github.com/ok300/nostr-rs.git#8418b7497dfdf33ace1eb62210266a502d02d4d4"
 dependencies = [
  "aes",
  "base64",

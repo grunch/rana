@@ -2,9 +2,10 @@
 name = "rana"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
 authors = ["Francisco Calderón <fjcalderon@gmail.com>"]
 
 [dependencies]
 bitcoin_hashes = "0.11.0"
-nostr = { path = "nostr" }
+nostr = { git = "https://github.com/ok300/nostr-rs.git", commit = "8418b7497dfdf33ace1eb62210266a502d02d4d4" }
 secp256k1 = "0.24.0"
