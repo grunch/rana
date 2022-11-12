@@ -26,10 +26,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut iterations = 0;
     let mut found_valid_hash = false;
 
+    let secp = Secp256k1::new();
+
     while !found_valid_hash {
         iterations += 1;
 
-        let secp = Secp256k1::new();
         let (secret_key, public_key) = secp.generate_keypair(&mut OsRng);
 
         let public_string = public_key.to_string();
