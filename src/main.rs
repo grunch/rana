@@ -1,11 +1,8 @@
-use bitcoin_hashes::sha256;
-use nostr::util;
 use secp256k1::rand::rngs::OsRng;
 use secp256k1::Secp256k1;
 use std::cmp::max;
 use std::env;
 use std::error::Error;
-use std::str::FromStr;
 use std::time::Instant;
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -32,15 +29,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         iterations += 1;
 
         let (secret_key, public_key) = secp.generate_keypair(&mut OsRng);
-
-        let public_string = public_key.to_string();
-        let hash = sha256::Hash::from_str(&public_string[2..]).unwrap();
-
-        let leading_zeroes = util::nip13::get_leading_zero_bits(hash.clone());
+        let (xonly_public_key, _) = public_key.x_only_public_key();
+        let leading_zeroes = get_leading_zero_bits(&xonly_public_key.serialize());
         if leading_zeroes >= pow_difficulty {
             found_valid_hash = true;
 
-            println!("Found matching public key: {hash}");
+            println!("Found matching public key: {xonly_public_key}");
             println!("Leading zero bits: {leading_zeroes} (min. required: {pow_difficulty})");
             let iter_string = format!("{iterations}");
             let l = iter_string.len();
@@ -59,4 +53,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     Ok(())
+}
+
+#[inline]
+fn get_leading_zero_bits(bytes: &[u8]) -> u8 {
+    let mut res = 0_u8;
+    for b in bytes.as_ref() {
+        if *b == 0 {
+            res += 8;
+        } else {
+            res += b.leading_zeros() as u8;
+            return res;
+        }
+    }
+    res
 }
