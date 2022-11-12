@@ -20,10 +20,20 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     println!("Started mining process with a difficulty of: {pow_difficulty}");
 
+    // Set your machine variables here:
+    let cores = 8;
+    let hashes_per_second_per_core = 48000;
+
+    let estimated_hashes = 2_u64.pow(pow_difficulty as u32);
+    println!("Searching for prefix of {} zero bits", pow_difficulty);
+    let estimate = estimated_hashes as f32
+        / hashes_per_second_per_core as f32
+        / cores as f32
+        / 2.0;
+    println!("This is estimated to take about {} seconds", estimate);
+
     // Loop: generate public keys until desired number of leading zeroes is reached
     let now = Instant::now();
-
-    let cores = 8;
 
     for _ in 0..cores {
         thread::spawn(move || {
