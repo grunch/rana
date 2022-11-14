@@ -1,4 +1,6 @@
-# Rana
+# Rana 🐸
+
+![Rana](rana.png)
 
 Mine public keys that can be used with nostr.
 

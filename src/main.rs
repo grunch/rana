@@ -4,8 +4,8 @@ use std::cmp::max;
 use std::env;
 use std::error::Error;
 use std::process;
-use std::time::Instant;
 use std::thread;
+use std::time::Instant;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
@@ -26,10 +26,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let estimated_hashes = 2_u64.pow(pow_difficulty as u32);
     println!("Searching for prefix of {} zero bits", pow_difficulty);
-    let estimate = estimated_hashes as f32
-        / hashes_per_second_per_core as f32
-        / cores as f32
-        / 2.0;
+    let estimate = estimated_hashes as f32 / hashes_per_second_per_core as f32 / cores as f32 / 2.0;
     println!("This is estimated to take about {} seconds", estimate);
 
     // Loop: generate public keys until desired number of leading zeroes is reached
@@ -47,7 +44,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let leading_zeroes = get_leading_zero_bits(&xonly_public_key.serialize());
                 if leading_zeroes >= pow_difficulty {
                     println!("Found matching public key: {xonly_public_key}");
-                    println!("Leading zero bits: {leading_zeroes} (min. required: {pow_difficulty})");
+                    println!(
+                        "Leading zero bits: {leading_zeroes} (min. required: {pow_difficulty})"
+                    );
                     let iter_string = format!("{iterations}");
                     let l = iter_string.len();
                     let f = iter_string.chars().next().unwrap();
