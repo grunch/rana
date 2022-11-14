@@ -76,7 +76,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 #[inline]
 fn get_leading_zero_bits(bytes: &[u8]) -> u8 {
     let mut res = 0_u8;
-    for b in bytes.as_ref() {
+    for b in bytes {
         if *b == 0 {
             res += 8;
         } else {
