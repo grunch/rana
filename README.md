@@ -28,12 +28,11 @@ Then clone the repo, build and run:
 ```bash
 $ git clone https://github.com/grunch/rana.git
 $ cd rana
-$ cargo build --release
-$ target/release/rana
+$ cargo run --release
 ```
 
 By default it will generate a public key with a difficulty of `10` but you can enter your difficulty as a parameter and be patient if you enter a bigger number.
 
 ```bash
-$ target/release/rana 20
+$ cargo run --release 20
 ```
