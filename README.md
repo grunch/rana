@@ -6,6 +6,10 @@ Mine public keys that can be used with nostr.
 
 This is based on [nip13](https://github.com/ok300/nostr-rs/blob/master/examples/nip13.rs) example.
 
+Provide the desired difficulty as the last argument. See:
+
+![Screenshot](screenshot.png)
+
 ## Requirements:
 
 0. You need Rust version 1.64 or higher to compile.
