@@ -67,6 +67,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let (xonly_public_key, _) = public_key.x_only_public_key();
                 let leading_zeroes = get_leading_zero_bits(&xonly_public_key.serialize());
                 if leading_zeroes > best.load(Ordering::Relaxed) {
+                    println!("==============================================");
                     println!("Found matching public key: {xonly_public_key}");
                     println!("Leading zero bits: {leading_zeroes}");
                     let iter_string = format!("{iterations}");
