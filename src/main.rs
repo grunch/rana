@@ -3,7 +3,8 @@ use secp256k1::Secp256k1;
 use std::cmp::max;
 use std::env;
 use std::error::Error;
-use std::process;
+use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::Arc;
 use std::thread;
 use std::time::Instant;
 
@@ -52,7 +53,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     println!("Mining using {cores} cores...");
 
+    let best = Arc::new(AtomicU8::new(pow_difficulty));
+
     for _ in 0..cores {
+        let best = best.clone();
         thread::spawn(move || {
             let secp = Secp256k1::new();
             let mut iterations = 0;
@@ -62,11 +66,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let (secret_key, public_key) = secp.generate_keypair(&mut OsRng);
                 let (xonly_public_key, _) = public_key.x_only_public_key();
                 let leading_zeroes = get_leading_zero_bits(&xonly_public_key.serialize());
-                if leading_zeroes >= pow_difficulty {
+                if leading_zeroes > best.load(Ordering::Relaxed) {
                     println!("Found matching public key: {xonly_public_key}");
-                    println!(
-                        "Leading zero bits: {leading_zeroes} (min. required: {pow_difficulty})"
-                    );
+                    println!("Leading zero bits: {leading_zeroes}");
                     let iter_string = format!("{iterations}");
                     let l = iter_string.len();
                     let f = iter_string.chars().next().unwrap();
@@ -81,7 +83,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                     let private = secret_key.display_secret().to_string();
                     println!("Nostr private key: {private}");
 
-                    process::exit(0); // other threads will be cleaned up.
+                    best.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |_| Some(leading_zeroes))
+                        .unwrap();
                 }
             }
         });
