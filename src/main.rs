@@ -1,4 +1,4 @@
-use secp256k1::rand::rngs::OsRng;
+use secp256k1::rand::thread_rng;
 use secp256k1::Secp256k1;
 use std::cmp::max;
 use std::env;
@@ -31,8 +31,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("Benchmarking a single core for 5 seconds...");
     let now = Instant::now();
     let secp = Secp256k1::new();
+    let mut rng = thread_rng();
     loop {
-        let (_secret_key, public_key) = secp.generate_keypair(&mut OsRng);
+        let (_secret_key, public_key) = secp.generate_keypair(&mut rng);
         let (xonly_public_key, _) = public_key.x_only_public_key();
         let _leading_zeroes = get_leading_zero_bits(&xonly_public_key.serialize());
         hashes_per_second_per_core += 1;
@@ -58,12 +59,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     for _ in 0..cores {
         let best = best.clone();
         thread::spawn(move || {
+            let mut rng = thread_rng();
             let secp = Secp256k1::new();
             let mut iterations = 0;
             loop {
                 iterations += 1;
 
-                let (secret_key, public_key) = secp.generate_keypair(&mut OsRng);
+                let (secret_key, public_key) = secp.generate_keypair(&mut rng);
                 let (xonly_public_key, _) = public_key.x_only_public_key();
                 let leading_zeroes = get_leading_zero_bits(&xonly_public_key.serialize());
                 if leading_zeroes > best.load(Ordering::Relaxed) {
