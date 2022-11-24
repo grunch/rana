@@ -3,7 +3,7 @@ use secp256k1::Secp256k1;
 use std::cmp::max;
 use std::env;
 use std::error::Error;
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::atomic::{AtomicU64, AtomicU8, Ordering};
 use std::sync::Arc;
 use std::thread;
 use std::time::Instant;
@@ -55,15 +55,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("Mining using {cores} cores...");
 
     let best = Arc::new(AtomicU8::new(pow_difficulty));
+    let iterations = Arc::new(AtomicU64::new(0));
 
     for _ in 0..cores {
         let best = best.clone();
+        let iterations = iterations.clone();
         thread::spawn(move || {
             let mut rng = thread_rng();
             let secp = Secp256k1::new();
-            let mut iterations = 0;
             loop {
-                iterations += 1;
+                iterations.fetch_add(1, Ordering::Relaxed);
 
                 let (secret_key, public_key) = secp.generate_keypair(&mut rng);
                 let (xonly_public_key, _) = public_key.x_only_public_key();
@@ -72,6 +73,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     println!("==============================================");
                     println!("Found matching public key: {xonly_public_key}");
                     println!("Leading zero bits: {leading_zeroes}");
+                    let iterations = iterations.load(Ordering::Relaxed);
                     let iter_string = format!("{iterations}");
                     let l = iter_string.len();
                     let f = iter_string.chars().next().unwrap();
@@ -81,13 +83,15 @@ fn main() -> Result<(), Box<dyn Error>> {
                         f,
                         l - 1,
                         now.elapsed().as_secs(),
-                        iterations * 1000 / max(1, now.elapsed().as_millis())
+                        iterations / max(1, now.elapsed().as_secs())
                     );
                     let private = secret_key.display_secret().to_string();
                     println!("Nostr private key: {private}");
 
-                    best.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |_| Some(leading_zeroes))
-                        .unwrap();
+                    best.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |_| {
+                        Some(leading_zeroes)
+                    })
+                    .unwrap();
                 }
             }
         });
