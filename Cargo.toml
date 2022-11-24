@@ -7,5 +7,9 @@ authors = ["Francisco Calderón <fjcalderon@gmail.com>"]
 
 [dependencies]
 bitcoin_hashes = "0.11.0"
-secp256k1 = { version = "0.24.0", features = ["rand-std"] }
+secp256k1 = { version = "0.24.1", features = ["rand-std"] }
 num_cpus = "1.1"
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
