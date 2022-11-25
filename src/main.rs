@@ -1,5 +1,5 @@
 use secp256k1::rand::thread_rng;
-use secp256k1::Secp256k1;
+use secp256k1::{Secp256k1, SecretKey, XOnlyPublicKey};
 use std::cmp::max;
 use std::env;
 use std::error::Error;
@@ -7,6 +7,8 @@ use std::sync::atomic::{AtomicU64, AtomicU8, Ordering};
 use std::sync::Arc;
 use std::thread;
 use std::time::Instant;
+use bech32::{ToBase32, Variant};
+use bitcoin_hashes::hex::ToHex;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
@@ -71,7 +73,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let leading_zeroes = get_leading_zero_bits(&xonly_public_key.serialize());
                 if leading_zeroes > best.load(Ordering::Relaxed) {
                     println!("==============================================");
-                    println!("Found matching public key: {xonly_public_key}");
+                    print_keys(secret_key, xonly_public_key).unwrap();
                     println!("Leading zero bits: {leading_zeroes}");
                     let iterations = iterations.load(Ordering::Relaxed);
                     let iter_string = format!("{iterations}");
@@ -85,8 +87,6 @@ fn main() -> Result<(), Box<dyn Error>> {
                         now.elapsed().as_secs(),
                         iterations / max(1, now.elapsed().as_secs())
                     );
-                    let private = secret_key.display_secret().to_string();
-                    println!("Nostr private key: {private}");
 
                     best.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |_| {
                         Some(leading_zeroes)
@@ -101,6 +101,29 @@ fn main() -> Result<(), Box<dyn Error>> {
     loop {
         thread::sleep(std::time::Duration::from_secs(3600));
     }
+}
+
+fn print_keys(secret_key: SecretKey, xonly_public_key: XOnlyPublicKey) -> Result<(), Box<dyn Error>> {
+    println!("Found matching public key: {xonly_public_key}");
+    let private_hex = secret_key.display_secret().to_string();
+    println!("Nostr private key: {private_hex:>72}");
+
+    println!("Nostr public key (npub): {:>65}",
+             bech32::encode(
+                 "npub",
+                 hex::decode(xonly_public_key.to_hex())?.to_base32(),
+                 Variant::Bech32
+             )?
+    );
+    println!("Nostr private key (nsec): {:>64}",
+             bech32::encode(
+                 "nsec",
+                 hex::decode(private_hex)?.to_base32(),
+                 Variant::Bech32
+             )?
+    );
+
+    Ok(())
 }
 
 #[inline]

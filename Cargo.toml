@@ -6,7 +6,9 @@ license = "MIT"
 authors = ["Francisco Calderón <fjcalderon@gmail.com>"]
 
 [dependencies]
+bech32 = "*"
 bitcoin_hashes = "0.11.0"
+hex = "*"
 secp256k1 = { version = "0.24.1", features = ["rand-std"] }
 num_cpus = "1.1"
 
