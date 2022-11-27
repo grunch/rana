@@ -1,3 +1,5 @@
+use bech32::{ToBase32, Variant};
+use bitcoin_hashes::hex::ToHex;
 use secp256k1::rand::thread_rng;
 use secp256k1::{Secp256k1, SecretKey, XOnlyPublicKey};
 use std::cmp::max;
@@ -7,8 +9,6 @@ use std::sync::atomic::{AtomicU64, AtomicU8, Ordering};
 use std::sync::Arc;
 use std::thread;
 use std::time::Instant;
-use bech32::{ToBase32, Variant};
-use bitcoin_hashes::hex::ToHex;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Parse CLI arguments
@@ -86,12 +86,14 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let (secret_key, public_key) = secp.generate_keypair(&mut rng);
                 let (xonly_public_key, _) = public_key.x_only_public_key();
 
-                let leading_zeroes = get_leading_zero_bits(&xonly_public_key.serialize());
+                let mut leading_zeroes = 0;
 
+                // check pubkey validity depending on arg settings
                 let is_valid_pubkey: bool;
                 if vanity_ts.as_str() != "" {
                     is_valid_pubkey = xonly_public_key.to_hex().starts_with(vanity_ts.as_str());
                 } else {
+                    leading_zeroes = get_leading_zero_bits(&xonly_public_key.serialize());
                     is_valid_pubkey = leading_zeroes > best_diff.load(Ordering::Relaxed);
                     if is_valid_pubkey {
                         println!("Leading zero bits: {leading_zeroes}");
@@ -115,10 +117,14 @@ fn main() -> Result<(), Box<dyn Error>> {
                         iterations / max(1, now.elapsed().as_secs())
                     );
 
-                    best_diff.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |_| {
-                            Some(leading_zeroes)
-                        })
-                        .unwrap();
+                    // update difficulty only if it was set in the first place
+                    if best_diff.load(Ordering::Relaxed) > 0 {
+                        best_diff
+                            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |_| {
+                                Some(leading_zeroes)
+                            })
+                            .unwrap();
+                    }
                 }
             }
         });
