@@ -21,8 +21,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut pow_difficulty = difficulty;
 
     if vanity_prefix != "" {
-        // set pow difficulty as the lenght of the prefix
-        pow_difficulty = vanity_prefix.len() as u8;
+        // set pow difficulty as the length of the prefix translated to bits
+        pow_difficulty = (vanity_prefix.len() * 4) as u8;
         println!(
             "Started mining process for a vanify prefix of: {} (pow: {})",
             vanity_prefix, pow_difficulty
@@ -59,7 +59,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("A single core can mine roughly {hashes_per_second_per_core} h/s!");
 
     let estimated_hashes = 2_u128.pow(pow_difficulty as u32);
-    println!("Searching for prefix of {pow_difficulty} zero bits");
+    println!("Searching for prefix of {pow_difficulty} specific bits");
     let estimate = estimated_hashes as f32 / hashes_per_second_per_core as f32 / cores as f32;
     println!("This is estimated to take about {estimate} seconds");
 
@@ -116,9 +116,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                     );
 
                     best_diff.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |_| {
-                        Some(leading_zeroes)
-                    })
-                    .unwrap();
+                            Some(leading_zeroes)
+                        })
+                        .unwrap();
                 }
             }
         });
@@ -208,8 +208,8 @@ fn parse_args() -> CliParsedArgs {
     if parsed_args.difficulty > 0 && parsed_args.vanity_prefix != "" {
         panic!("You cannot set a difficulty and a vanity prefix at the same time.");
     }
-    if parsed_args.vanity_prefix.len() > 255 {
-        panic!("The vanity prefix cannot be longer than 255 characters.");
+    if parsed_args.vanity_prefix.len() > 32 {
+        panic!("The vanity prefix cannot be longer than 32 characters.");
     }
 
     // println!("Diff: {}", cli_args.difficulty);
