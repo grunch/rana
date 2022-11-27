@@ -11,21 +11,33 @@ use bech32::{ToBase32, Variant};
 use bitcoin_hashes::hex::ToHex;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let args: Vec<String> = env::args().collect();
-    let difficulty = args.get(1);
+    // Parse CLI arguments
+    // let args: Vec<String> = env::args().collect();
+    let parsed_args = parse_args();
 
-    let mut pow_difficulty = env::args()
-        .last()
-        .unwrap_or_else(|| "10".to_owned())
-        .parse()
-        .unwrap_or(10);
-    if let Some(d) = difficulty {
-        pow_difficulty = d
-            .trim()
-            .parse()
-            .expect("You must enter a number less than 255");
+    let mut difficulty = parsed_args.difficulty;
+    let vanity_prefix = parsed_args.vanity_prefix;
+    // initially the same as difficulty
+    let mut pow_difficulty = difficulty;
+
+    if vanity_prefix != "" {
+        // set pow difficulty as the lenght of the prefix
+        pow_difficulty = vanity_prefix.len() as u8;
+        println!(
+            "Started mining process for a vanify prefix of: {} (pow: {})",
+            vanity_prefix, pow_difficulty
+        );
+    } else {
+        if difficulty == 0 {
+            difficulty = 10; // default
+            pow_difficulty = difficulty;
+        }
+
+        println!(
+            "Started mining process with a difficulty of: {difficulty} (pow: {})",
+            pow_difficulty
+        );
     }
-    println!("Started mining process with a difficulty of: {pow_difficulty}");
 
     let cores = num_cpus::get();
     let mut hashes_per_second_per_core = 0;
@@ -56,11 +68,14 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     println!("Mining using {cores} cores...");
 
-    let best = Arc::new(AtomicU8::new(pow_difficulty));
+    // thread safe variables
+    let best_diff = Arc::new(AtomicU8::new(pow_difficulty));
+    let vanity_ts = Arc::new(vanity_prefix);
     let iterations = Arc::new(AtomicU64::new(0));
 
     for _ in 0..cores {
-        let best = best.clone();
+        let best_diff = best_diff.clone();
+        let vanity_ts = vanity_ts.clone();
         let iterations = iterations.clone();
         thread::spawn(move || {
             let mut rng = thread_rng();
@@ -70,11 +85,23 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                 let (secret_key, public_key) = secp.generate_keypair(&mut rng);
                 let (xonly_public_key, _) = public_key.x_only_public_key();
+
                 let leading_zeroes = get_leading_zero_bits(&xonly_public_key.serialize());
-                if leading_zeroes > best.load(Ordering::Relaxed) {
+
+                let is_valid_pubkey: bool;
+                if vanity_ts.as_str() != "" {
+                    is_valid_pubkey = xonly_public_key.to_hex().starts_with(vanity_ts.as_str());
+                } else {
+                    is_valid_pubkey = leading_zeroes > best_diff.load(Ordering::Relaxed);
+                    if is_valid_pubkey {
+                        println!("Leading zero bits: {leading_zeroes}");
+                    }
+                }
+
+                // if one of the required conditions is satisfied
+                if is_valid_pubkey {
                     println!("==============================================");
                     print_keys(secret_key, xonly_public_key).unwrap();
-                    println!("Leading zero bits: {leading_zeroes}");
                     let iterations = iterations.load(Ordering::Relaxed);
                     let iter_string = format!("{iterations}");
                     let l = iter_string.len();
@@ -88,7 +115,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                         iterations / max(1, now.elapsed().as_secs())
                     );
 
-                    best.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |_| {
+                    best_diff.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |_| {
                         Some(leading_zeroes)
                     })
                     .unwrap();
@@ -103,24 +130,30 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 }
 
-fn print_keys(secret_key: SecretKey, xonly_public_key: XOnlyPublicKey) -> Result<(), Box<dyn Error>> {
+/// Print private and public keys to the output
+fn print_keys(
+    secret_key: SecretKey,
+    xonly_public_key: XOnlyPublicKey,
+) -> Result<(), Box<dyn Error>> {
     println!("Found matching public key: {xonly_public_key}");
     let private_hex = secret_key.display_secret().to_string();
     println!("Nostr private key: {private_hex:>72}");
 
-    println!("Nostr public key (npub): {:>65}",
-             bech32::encode(
-                 "npub",
-                 hex::decode(xonly_public_key.to_hex())?.to_base32(),
-                 Variant::Bech32
-             )?
+    println!(
+        "Nostr public key (npub): {:>65}",
+        bech32::encode(
+            "npub",
+            hex::decode(xonly_public_key.to_hex())?.to_base32(),
+            Variant::Bech32
+        )?
     );
-    println!("Nostr private key (nsec): {:>64}",
-             bech32::encode(
-                 "nsec",
-                 hex::decode(private_hex)?.to_base32(),
-                 Variant::Bech32
-             )?
+    println!(
+        "Nostr private key (nsec): {:>64}",
+        bech32::encode(
+            "nsec",
+            hex::decode(private_hex)?.to_base32(),
+            Variant::Bech32
+        )?
     );
 
     Ok(())
@@ -138,4 +171,48 @@ fn get_leading_zero_bits(bytes: &[u8]) -> u8 {
         }
     }
     res
+}
+
+struct CliParsedArgs {
+    difficulty: u8,
+    vanity_prefix: String,
+}
+
+/// Parse and structure the CLI arguments
+fn parse_args() -> CliParsedArgs {
+    let mut parsed_args = CliParsedArgs {
+        difficulty: 0,                 // empty/disabled
+        vanity_prefix: "".to_string(), // empty/disabled
+    };
+    let args: Vec<String> = env::args().collect();
+
+    for a in 0..args.len() {
+        let arg = &args[a];
+        // if named arg
+        if arg.starts_with("--") {
+            let arg_parts: Vec<&str> = arg.split("=").collect();
+            let arg_name = (&arg_parts[0]).to_string();
+            // remove the first "--"
+            let arg_name = &arg_name[2..arg_name.len()];
+            let arg_value = (&arg_parts[1]).to_string();
+            // now parse to the supported args
+            match arg_name {
+                "difficulty" => parsed_args.difficulty = arg_value.parse().unwrap(),
+                "vanity" => parsed_args.vanity_prefix = arg_value,
+                _ => println!("Argument '{arg_name}' not supported. Ignored"),
+            }
+        }
+    }
+
+    // validation
+    if parsed_args.difficulty > 0 && parsed_args.vanity_prefix != "" {
+        panic!("You cannot set a difficulty and a vanity prefix at the same time.");
+    }
+    if parsed_args.vanity_prefix.len() > 255 {
+        panic!("The vanity prefix cannot be longer than 255 characters.");
+    }
+
+    // println!("Diff: {}", cli_args.difficulty);
+    // println!("Vanity: {}", cli_args.vanity_prefix);
+    return parsed_args;
 }
