@@ -6,9 +6,7 @@ Mine public keys that can be used with nostr.
 
 This is based on [nip13](https://github.com/ok300/nostr-rs/blob/master/examples/nip13.rs) example.
 
-Provide the desired difficulty as the last argument. See:
-
-![Screenshot](screenshot.png)
+Provide the desired difficulty or the vanity prefix as arguments. See below.
 
 ## Requirements:
 
@@ -34,5 +32,13 @@ $ cargo run --release
 By default it will generate a public key with a difficulty of `10` but you can enter your difficulty as a parameter and be patient if you enter a bigger number.
 
 ```bash
-$ cargo run --release 20
+$ cargo run -- --difficulty=20
 ```
+
+Additionally you can specify a vanity prefix (hexadecimal characters) with the corresponding argument:
+
+```bash
+$ cargo run -- --vanity=dead
+```
+
+Keep in mind that you cannot specify a difficulty and a vanity prefix at the same time.
