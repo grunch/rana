@@ -21,22 +21,30 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut difficulty = parsed_args.difficulty;
     let vanity_prefix = parsed_args.vanity_prefix;
     let vanity_npub_prefix = parsed_args.vanity_npub_prefix;
+
+    //-- Calculate pow difficulty and initialize
+
     // initially the same as difficulty
     let mut pow_difficulty = difficulty;
 
-    if vanity_prefix != "" {
-        // set pow difficulty as the length of the prefix translated to bits
-        pow_difficulty = (vanity_prefix.len() * 4) as u8;
+    if vanity_prefix != "" || vanity_npub_prefix != "" {
+        // there is a vanity requirement
+
+        pow_difficulty = 1; // initialize for further multiplication
+
+        if vanity_prefix != "" {
+            // set pow difficulty as the length of the prefix translated to bits
+            pow_difficulty = pow_difficulty * (vanity_prefix.len() * 4) as u8;
+        }
+
+        if vanity_npub_prefix != "" {
+            // set pow difficulty as the length of the prefix translated to bits
+            pow_difficulty = pow_difficulty * (vanity_npub_prefix.len() * 4) as u8;
+        }
+
         println!(
-            "Started mining process for a vanify prefix of: {} (pow: {})",
-            vanity_prefix, pow_difficulty
-        );
-    } else if vanity_npub_prefix != "" {
-        // set pow difficulty as the length of the prefix translated to bits
-        pow_difficulty = (vanity_npub_prefix.len() * 4) as u8;
-        println!(
-            "Started mining process for a vanify npub prefix of: {} (pow: {})",
-            vanity_npub_prefix, pow_difficulty
+            "Started mining process for a vanify prefix of: '{}' and 'npub1{}' (estimated pow: {})",
+            vanity_prefix, vanity_npub_prefix, pow_difficulty
         );
     } else {
         // Defaults to using difficulty
@@ -73,6 +81,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let vanity_npub_ts = Arc::new(vanity_npub_prefix);
     let iterations = Arc::new(AtomicU64::new(0));
 
+    // start a thread for each core for calculations
     for _ in 0..cores {
         let best_diff = best_diff.clone();
         let vanity_ts = vanity_ts.clone();
@@ -90,12 +99,17 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let mut leading_zeroes = 0;
 
                 // check pubkey validity depending on arg settings
-                let mut is_valid_pubkey: bool = false;
+                let is_valid_pubkey: bool;
                 if vanity_ts.as_str() != "" || vanity_npub_ts.as_str() != "" {
                     let hexa_key = xonly_public_key.to_hex();
+                    let mut is_valid_pubkey_hex = true;
+                    let mut is_valid_pubkey_bech32 = true;
+
                     if vanity_ts.as_str() != "" {
-                        is_valid_pubkey = hexa_key.starts_with(vanity_ts.as_str());
-                    } else if vanity_npub_ts.as_str() != "" {
+                        is_valid_pubkey_hex = hexa_key.starts_with(vanity_ts.as_str());
+                    }
+
+                    if vanity_npub_ts.as_str() != "" {
                         let bech_key: String = bech32::encode(
                             "npub",
                             hex::decode(hexa_key).unwrap().to_base32(),
@@ -103,10 +117,14 @@ fn main() -> Result<(), Box<dyn Error>> {
                         )
                         .unwrap();
 
-                        is_valid_pubkey = bech_key.starts_with(
+                        is_valid_pubkey_bech32 = bech_key.starts_with(
                             (String::from("npub1") + vanity_npub_ts.as_str()).as_str(),
                         );
                     }
+
+                    // only valid if both options are valid
+                    // it one of both were not required, then it's considered valid
+                    is_valid_pubkey = is_valid_pubkey_hex && is_valid_pubkey_bech32;
                 } else {
                     leading_zeroes = get_leading_zero_bits(&xonly_public_key.serialize());
                     is_valid_pubkey = leading_zeroes > best_diff.load(Ordering::Relaxed);
@@ -256,10 +274,9 @@ fn parse_args() -> CliParsedArgs {
 
     // validation
     if parsed_args.difficulty > 0
-        && parsed_args.vanity_prefix != ""
-        && parsed_args.vanity_npub_prefix != ""
+        && (parsed_args.vanity_prefix != "" || parsed_args.vanity_npub_prefix != "")
     {
-        panic!("You can only specify one generation condition at a time.");
+        panic!("You can cannot specify difficulty and vanity at the same time.");
     }
     if parsed_args.vanity_prefix.len() > 64 {
         panic!("The vanity prefix cannot be longer than 64 characters.");
