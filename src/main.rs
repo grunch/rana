@@ -20,6 +20,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut difficulty = parsed_args.difficulty;
     let vanity_prefix = parsed_args.vanity_prefix;
+    let vanity_npub_prefix = parsed_args.vanity_npub_prefix;
     // initially the same as difficulty
     let mut pow_difficulty = difficulty;
 
@@ -29,6 +30,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         println!(
             "Started mining process for a vanify prefix of: {} (pow: {})",
             vanity_prefix, pow_difficulty
+        );
+    } else if vanity_npub_prefix != "" {
+        // set pow difficulty as the length of the prefix translated to bits
+        pow_difficulty = (vanity_npub_prefix.len() * 4) as u8;
+        println!(
+            "Started mining process for a vanify npub prefix of: {} (pow: {})",
+            vanity_npub_prefix, pow_difficulty
         );
     } else {
         // Defaults to using difficulty
@@ -48,9 +56,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     let cores = num_cpus::get();
 
     // benchmark cores
-    benchmark_cores(cores, pow_difficulty);
+    if vanity_npub_prefix != "" {
+        println!("Benchmarking of cores disabled for vanity npub key upon proper calculation.");
+    } else {
+        benchmark_cores(cores, pow_difficulty);
+    }
 
-    // Loop: generate public keys until desired number of leading zeroes is reached
+    // Loop: generate public keys until desired public key is reached
     let now = Instant::now();
 
     println!("Mining using {cores} cores...");
@@ -58,11 +70,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     // thread safe variables
     let best_diff = Arc::new(AtomicU8::new(pow_difficulty));
     let vanity_ts = Arc::new(vanity_prefix);
+    let vanity_npub_ts = Arc::new(vanity_npub_prefix);
     let iterations = Arc::new(AtomicU64::new(0));
 
     for _ in 0..cores {
         let best_diff = best_diff.clone();
         let vanity_ts = vanity_ts.clone();
+        let vanity_npub_ts = vanity_npub_ts.clone();
         let iterations = iterations.clone();
         thread::spawn(move || {
             let mut rng = thread_rng();
@@ -76,9 +90,23 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let mut leading_zeroes = 0;
 
                 // check pubkey validity depending on arg settings
-                let is_valid_pubkey: bool;
-                if vanity_ts.as_str() != "" {
-                    is_valid_pubkey = xonly_public_key.to_hex().starts_with(vanity_ts.as_str());
+                let mut is_valid_pubkey: bool = false;
+                if vanity_ts.as_str() != "" || vanity_npub_ts.as_str() != "" {
+                    let hexa_key = xonly_public_key.to_hex();
+                    if vanity_ts.as_str() != "" {
+                        is_valid_pubkey = hexa_key.starts_with(vanity_ts.as_str());
+                    } else if vanity_npub_ts.as_str() != "" {
+                        let bech_key: String = bech32::encode(
+                            "npub",
+                            hex::decode(hexa_key).unwrap().to_base32(),
+                            Variant::Bech32,
+                        )
+                        .unwrap();
+
+                        is_valid_pubkey = bech_key.starts_with(
+                            (String::from("npub1") + vanity_npub_ts.as_str()).as_str(),
+                        );
+                    }
                 } else {
                     leading_zeroes = get_leading_zero_bits(&xonly_public_key.serialize());
                     is_valid_pubkey = leading_zeroes > best_diff.load(Ordering::Relaxed);
@@ -195,13 +223,15 @@ fn get_leading_zero_bits(bytes: &[u8]) -> u8 {
 struct CliParsedArgs {
     difficulty: u8,
     vanity_prefix: String,
+    vanity_npub_prefix: String,
 }
 
 /// Parse and structure the CLI arguments
 fn parse_args() -> CliParsedArgs {
     let mut parsed_args = CliParsedArgs {
-        difficulty: 0,                 // empty/disabled
-        vanity_prefix: "".to_string(), // empty/disabled
+        difficulty: 0,                      // empty/disabled
+        vanity_prefix: "".to_string(),      // empty/disabled
+        vanity_npub_prefix: "".to_string(), // empty/disabled
     };
     let args: Vec<String> = env::args().collect();
 
@@ -218,23 +248,37 @@ fn parse_args() -> CliParsedArgs {
             match arg_name {
                 "difficulty" => parsed_args.difficulty = arg_value.parse().unwrap(),
                 "vanity" => parsed_args.vanity_prefix = arg_value.to_lowercase(),
+                "vanity-n" => parsed_args.vanity_npub_prefix = arg_value.to_lowercase(),
                 _ => println!("Argument '{arg_name}' not supported. Ignored"),
             }
         }
     }
 
     // validation
-    if parsed_args.difficulty > 0 && parsed_args.vanity_prefix != "" {
-        panic!("You cannot set a difficulty and a vanity prefix at the same time.");
+    if parsed_args.difficulty > 0
+        && parsed_args.vanity_prefix != ""
+        && parsed_args.vanity_npub_prefix != ""
+    {
+        panic!("You can only specify one generation condition at a time.");
     }
-    if parsed_args.vanity_prefix.len() > 32 {
-        panic!("The vanity prefix cannot be longer than 32 characters.");
+    if parsed_args.vanity_prefix.len() > 64 {
+        panic!("The vanity prefix cannot be longer than 64 characters.");
     }
     if parsed_args.vanity_prefix.len() > 0 {
         // check valid hexa characters
         let hex_re = Regex::new(r"^([0-9a-f]*)$").unwrap();
         if !hex_re.is_match(parsed_args.vanity_prefix.as_str()) {
             panic!("The vanity prefix can only contain hexadecimal characters.");
+        }
+    }
+    if parsed_args.vanity_npub_prefix.len() > 59 {
+        panic!("The vanity npub prefix cannot be longer than 59 characters.");
+    }
+    if parsed_args.vanity_npub_prefix.len() > 0 {
+        // check valid hexa characters
+        let hex_re = Regex::new(r"^([02-9ac-hj-np-z]*)$").unwrap();
+        if !hex_re.is_match(parsed_args.vanity_npub_prefix.as_str()) {
+            panic!("The vanity npub prefix can only contain characters supported by Bech32.");
         }
     }
 
