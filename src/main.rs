@@ -11,6 +11,8 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Instant;
 
+const DIFFICULTY_DEFAULT: u8 = 10;
+
 fn main() -> Result<(), Box<dyn Error>> {
     // Parse CLI arguments
     // let args: Vec<String> = env::args().collect();
@@ -30,8 +32,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         );
     } else {
         // Defaults to using difficulty
+
+        // if difficulty not indicated, then assume default
         if difficulty == 0 {
-            difficulty = 10; // default
+            difficulty = DIFFICULTY_DEFAULT; // default
             pow_difficulty = difficulty;
         }
 
@@ -42,28 +46,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let cores = num_cpus::get();
-    let mut hashes_per_second_per_core = 0;
 
-    println!("Benchmarking a single core for 5 seconds...");
-    let now = Instant::now();
-    let secp = Secp256k1::new();
-    let mut rng = thread_rng();
-    loop {
-        let (_secret_key, public_key) = secp.generate_keypair(&mut rng);
-        let (xonly_public_key, _) = public_key.x_only_public_key();
-        let _leading_zeroes = get_leading_zero_bits(&xonly_public_key.serialize());
-        hashes_per_second_per_core += 1;
-        if now.elapsed().as_secs() > 5 {
-            break;
-        }
-    }
-    hashes_per_second_per_core /= 10;
-    println!("A single core can mine roughly {hashes_per_second_per_core} h/s!");
-
-    let estimated_hashes = 2_u128.pow(pow_difficulty as u32);
-    println!("Searching for prefix of {pow_difficulty} specific bits");
-    let estimate = estimated_hashes as f32 / hashes_per_second_per_core as f32 / cores as f32;
-    println!("This is estimated to take about {estimate} seconds");
+    // benchmark cores
+    benchmark_cores(cores, pow_difficulty);
 
     // Loop: generate public keys until desired number of leading zeroes is reached
     let now = Instant::now();
@@ -136,6 +121,32 @@ fn main() -> Result<(), Box<dyn Error>> {
     loop {
         thread::sleep(std::time::Duration::from_secs(3600));
     }
+}
+
+/// Benchmark the cores capabilities for key generation
+fn benchmark_cores(cores: usize, pow_difficulty: u8) {
+    let mut hashes_per_second_per_core = 0;
+
+    println!("Benchmarking a single core for 5 seconds...");
+    let now = Instant::now();
+    let secp = Secp256k1::new();
+    let mut rng = thread_rng();
+    loop {
+        let (_secret_key, public_key) = secp.generate_keypair(&mut rng);
+        let (xonly_public_key, _) = public_key.x_only_public_key();
+        get_leading_zero_bits(&xonly_public_key.serialize());
+        hashes_per_second_per_core += 1;
+        if now.elapsed().as_secs() > 5 {
+            break;
+        }
+    }
+    hashes_per_second_per_core /= 10;
+    println!("A single core can mine roughly {hashes_per_second_per_core} h/s!");
+
+    let estimated_hashes = 2_u128.pow(pow_difficulty as u32);
+    println!("Searching for prefix of {pow_difficulty} specific bits");
+    let estimate = estimated_hashes as f32 / hashes_per_second_per_core as f32 / cores as f32;
+    println!("This is estimated to take about {estimate} seconds");
 }
 
 /// Print private and public keys to the output
