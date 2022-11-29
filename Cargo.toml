@@ -9,6 +9,7 @@ authors = ["Francisco Calderón <fjcalderon@gmail.com>"]
 bech32 = "*"
 bitcoin_hashes = "0.11.0"
 hex = "*"
+regex = "1"
 secp256k1 = { version = "0.24.1", features = ["rand-std"] }
 num_cpus = "1.1"
 

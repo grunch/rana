@@ -1,5 +1,6 @@
 use bech32::{ToBase32, Variant};
 use bitcoin_hashes::hex::ToHex;
+use regex::Regex;
 use secp256k1::rand::thread_rng;
 use secp256k1::{Secp256k1, SecretKey, XOnlyPublicKey};
 use std::cmp::max;
@@ -28,6 +29,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             vanity_prefix, pow_difficulty
         );
     } else {
+        // Defaults to using difficulty
         if difficulty == 0 {
             difficulty = 10; // default
             pow_difficulty = difficulty;
@@ -204,7 +206,7 @@ fn parse_args() -> CliParsedArgs {
             // now parse to the supported args
             match arg_name {
                 "difficulty" => parsed_args.difficulty = arg_value.parse().unwrap(),
-                "vanity" => parsed_args.vanity_prefix = arg_value,
+                "vanity" => parsed_args.vanity_prefix = arg_value.to_lowercase(),
                 _ => println!("Argument '{arg_name}' not supported. Ignored"),
             }
         }
@@ -216,6 +218,13 @@ fn parse_args() -> CliParsedArgs {
     }
     if parsed_args.vanity_prefix.len() > 32 {
         panic!("The vanity prefix cannot be longer than 32 characters.");
+    }
+    if parsed_args.vanity_prefix.len() > 0 {
+        // check valid hexa characters
+        let hex_re = Regex::new(r"^([0-9a-f]*)$").unwrap();
+        if !hex_re.is_match(parsed_args.vanity_prefix.as_str()) {
+            panic!("The vanity prefix can only contain hexadecimal characters.");
+        }
     }
 
     // println!("Diff: {}", cli_args.difficulty);
