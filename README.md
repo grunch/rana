@@ -29,16 +29,36 @@ $ cd rana
 $ cargo run --release
 ```
 
-By default it will generate a public key with a difficulty of `10` but you can enter your difficulty as a parameter and be patient if you enter a bigger number.
+By default it will generate a public key with a difficulty of `10` but you can customize its difficulty or vanity prefix with the proper parameters.
 
-```bash
-$ cargo run -- --difficulty=20
+Usage:
+```
+  OPTIONS
+
+      --difficulty <bits>   Enter the number of starting bits that should be 0.
+
+      --vanity <prefix>     Enter the prefix your public key should have when expressed 
+                            as hexadecimal.
+                            This can be combined with --vanity-n, but beware of extra
+                            calculations required.
+
+      --vanity-n <prefix>   Enter the prefix your public key should have when expressed 
+                            in npub format (Bech32 encoding).
+                            This can be combined with --vanity, but beware of extra
+                            calculations required.
+
+
 ```
 
-Additionally you can specify a vanity prefix (hexadecimal characters) with the corresponding argument:
+Examples:
 
 ```bash
-$ cargo run -- --vanity=dead
+$ cargo run --release -- --difficulty=20
+
+$ cargo run --release -- --vanity=dead
+
+$ cargo run --release -- --vanity-n=rana
 ```
 
 Keep in mind that you cannot specify a difficulty and a vanity prefix at the same time.
+Also, the more requirements you have, the longer it will take to reach a satisfactory public key.
