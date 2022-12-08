@@ -26,19 +26,19 @@ fn main() -> Result<(), Box<dyn Error>> {
     // initially the same as difficulty
     let mut pow_difficulty = difficulty;
 
-    if vanity_prefix != "" || vanity_npub_prefix != "" {
+    if !vanity_prefix.is_empty() || !vanity_npub_prefix.is_empty() {
         // there is a vanity requirement
 
         pow_difficulty = 1; // initialize for further multiplication
 
-        if vanity_prefix != "" {
+        if !vanity_prefix.is_empty() {
             // set pow difficulty as the length of the prefix translated to bits
-            pow_difficulty = pow_difficulty * (vanity_prefix.len() * 4) as u8;
+            pow_difficulty *= (vanity_prefix.len() * 4) as u8;
         }
 
-        if vanity_npub_prefix != "" {
+        if !vanity_npub_prefix.is_empty() {
             // set pow difficulty as the length of the prefix translated to bits
-            pow_difficulty = pow_difficulty * (vanity_npub_prefix.len() * 4) as u8;
+            pow_difficulty *= (vanity_npub_prefix.len() * 4) as u8;
         }
 
         println!(
@@ -63,7 +63,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let cores = num_cpus::get();
 
     // benchmark cores
-    if vanity_npub_prefix != "" {
+    if !vanity_npub_prefix.is_empty() {
         println!("Benchmarking of cores disabled for vanity npub key upon proper calculation.");
     } else {
         benchmark_cores(cores, pow_difficulty);
@@ -256,7 +256,7 @@ fn parse_args() -> CliParsedArgs {
         let arg = &args[a];
         // if named arg
         if arg.starts_with("--") {
-            let arg_parts: Vec<&str> = arg.split("=").collect();
+            let arg_parts: Vec<&str> = arg.split('=').collect();
             let arg_name = (&arg_parts[0]).to_string();
             // remove the first "--"
             let arg_name = &arg_name[2..arg_name.len()];
@@ -273,14 +273,14 @@ fn parse_args() -> CliParsedArgs {
 
     // validation
     if parsed_args.difficulty > 0
-        && (parsed_args.vanity_prefix != "" || parsed_args.vanity_npub_prefix != "")
+        && (!parsed_args.vanity_prefix.is_empty() || !parsed_args.vanity_npub_prefix.is_empty())
     {
         panic!("You can cannot specify difficulty and vanity at the same time.");
     }
     if parsed_args.vanity_prefix.len() > 64 {
         panic!("The vanity prefix cannot be longer than 64 characters.");
     }
-    if parsed_args.vanity_prefix.len() > 0 {
+    if !parsed_args.vanity_prefix.is_empty() {
         // check valid hexa characters
         let hex_re = Regex::new(r"^([0-9a-f]*)$").unwrap();
         if !hex_re.is_match(parsed_args.vanity_prefix.as_str()) {
@@ -290,7 +290,7 @@ fn parse_args() -> CliParsedArgs {
     if parsed_args.vanity_npub_prefix.len() > 59 {
         panic!("The vanity npub prefix cannot be longer than 59 characters.");
     }
-    if parsed_args.vanity_npub_prefix.len() > 0 {
+    if !parsed_args.vanity_npub_prefix.is_empty() {
         // check valid hexa characters
         let hex_re = Regex::new(r"^([02-9ac-hj-np-z]*)$").unwrap();
         if !hex_re.is_match(parsed_args.vanity_npub_prefix.as_str()) {
@@ -298,5 +298,5 @@ fn parse_args() -> CliParsedArgs {
         }
     }
 
-    return parsed_args;
+    parsed_args
 }

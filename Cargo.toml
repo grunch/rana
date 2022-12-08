@@ -4,6 +4,7 @@ version = "0.2.1"
 edition = "2021"
 license = "MIT"
 authors = ["Francisco Calderón <fjcalderon@gmail.com>"]
+description = "Nostr public key mining tool"
 
 [dependencies]
 bech32 = "*"
