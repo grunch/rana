@@ -15,7 +15,6 @@ const DIFFICULTY_DEFAULT: u8 = 10;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Parse CLI arguments
-    // let args: Vec<String> = env::args().collect();
     let parsed_args = parse_args();
 
     let mut difficulty = parsed_args.difficulty;
@@ -299,7 +298,5 @@ fn parse_args() -> CliParsedArgs {
         }
     }
 
-    // println!("Diff: {}", cli_args.difficulty);
-    // println!("Vanity: {}", cli_args.vanity_prefix);
     return parsed_args;
 }
