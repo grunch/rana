@@ -12,11 +12,19 @@ Provide the desired difficulty or the vanity prefix as arguments. See below.
 
 0. You need Rust version 1.64 or higher to compile.
 
-## Compile and execute it:
+## Install
+
+Using Cargo to install (requires ~/.cargo/bin to be in PATH)
+
+```bash
+$ cargo install rana
+```
+
+### Compile and execute it:
 
 To compile on Ubuntu/Pop!\_OS/Debian, please install [cargo](https://www.rust-lang.org/tools/install), then run the following commands:
 
-```
+```bash
 $ sudo apt update
 $ sudo apt install -y cmake build-essential
 ```
@@ -32,17 +40,18 @@ $ cargo run --release
 By default it will generate a public key with a difficulty of `10` but you can customize its difficulty or vanity prefix with the proper parameters.
 
 Usage:
+
 ```
   OPTIONS
 
       --difficulty <bits>   Enter the number of starting bits that should be 0.
 
-      --vanity <prefix>     Enter the prefix your public key should have when expressed 
+      --vanity <prefix>     Enter the prefix your public key should have when expressed
                             as hexadecimal.
                             This can be combined with --vanity-n, but beware of extra
                             calculations required.
 
-      --vanity-n <prefix>   Enter the prefix your public key should have when expressed 
+      --vanity-n <prefix>   Enter the prefix your public key should have when expressed
                             in npub format (Bech32 encoding).
                             This can be combined with --vanity, but beware of extra
                             calculations required.
@@ -58,6 +67,16 @@ $ cargo run --release -- --difficulty=20
 $ cargo run --release -- --vanity=dead
 
 $ cargo run --release -- --vanity-n=rana
+```
+
+If you have it installed with `cargo install`:
+
+```bash
+$ rana --difficulty=20
+
+$ rana --vanity=dead
+
+$ rana --vanity-n=rana
 ```
 
 Keep in mind that you cannot specify a difficulty and a vanity prefix at the same time.
