@@ -7,6 +7,7 @@ authors = ["Francisco Calderón <fjcalderon@gmail.com>"]
 description = "Nostr public key mining tool"
 
 [dependencies]
+clap = { version = "4.0.15", features = ["env", "default", "derive"]}
 bech32 = "0.9.1"
 bitcoin_hashes = "0.11.0"
 hex = "0.4.3"

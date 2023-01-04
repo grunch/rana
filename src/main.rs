@@ -1,5 +1,7 @@
 use bech32::{ToBase32, Variant};
 use bitcoin_hashes::hex::ToHex;
+use clap::Parser;
+use rana::cli::*;
 use regex::Regex;
 use secp256k1::rand::thread_rng;
 use secp256k1::{Secp256k1, SecretKey, XOnlyPublicKey};
@@ -15,11 +17,39 @@ const DIFFICULTY_DEFAULT: u8 = 10;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Parse CLI arguments
-    let parsed_args = parse_args();
+
+    let parsed_args = CLIArgs::parse();
 
     let mut difficulty = parsed_args.difficulty;
     let vanity_prefix = parsed_args.vanity_prefix;
     let vanity_npub_prefix = parsed_args.vanity_npub_prefix;
+
+    if difficulty > 0 && (!vanity_prefix.is_empty() || !vanity_npub_prefix.is_empty()) {
+        panic!("You can cannot specify difficulty and vanity at the same time.");
+    }
+    if vanity_prefix.len() > 64 {
+        panic!("The vanity prefix cannot be longer than 64 characters.");
+    }
+
+    if !vanity_prefix.is_empty() {
+        // check valid hexa characters
+        let hex_re = Regex::new(r"^([0-9a-f]*)$").unwrap();
+        if !hex_re.is_match(vanity_prefix.as_str()) {
+            panic!("The vanity prefix can only contain hexadecimal characters.");
+        }
+    }
+
+    if vanity_npub_prefix.len() > 59 {
+        panic!("The vanity npub prefix cannot be longer than 59 characters.");
+    }
+
+    if !vanity_npub_prefix.is_empty() {
+        // check valid hexa characters
+        let hex_re = Regex::new(r"^([02-9ac-hj-np-z]*)$").unwrap();
+        if !hex_re.is_match(vanity_npub_prefix.as_str()) {
+            panic!("The vanity npub prefix can only contain characters supported by Bech32.");
+        }
+    }
 
     //-- Calculate pow difficulty and initialize
 
@@ -235,68 +265,4 @@ fn get_leading_zero_bits(bytes: &[u8]) -> u8 {
         }
     }
     res
-}
-
-struct CliParsedArgs {
-    difficulty: u8,
-    vanity_prefix: String,
-    vanity_npub_prefix: String,
-}
-
-/// Parse and structure the CLI arguments
-fn parse_args() -> CliParsedArgs {
-    let mut parsed_args = CliParsedArgs {
-        difficulty: 0,                      // empty/disabled
-        vanity_prefix: "".to_string(),      // empty/disabled
-        vanity_npub_prefix: "".to_string(), // empty/disabled
-    };
-    let args: Vec<String> = env::args().collect();
-
-    for a in 0..args.len() {
-        let arg = &args[a];
-        // if named arg
-        if arg.starts_with("--") {
-            let arg_parts: Vec<&str> = arg.split('=').collect();
-            let arg_name = (&arg_parts[0]).to_string();
-            // remove the first "--"
-            let arg_name = &arg_name[2..arg_name.len()];
-            let arg_value = (&arg_parts[1]).to_string();
-            // now parse to the supported args
-            match arg_name {
-                "difficulty" => parsed_args.difficulty = arg_value.parse().unwrap(),
-                "vanity" => parsed_args.vanity_prefix = arg_value.to_lowercase(),
-                "vanity-n" => parsed_args.vanity_npub_prefix = arg_value.to_lowercase(),
-                _ => println!("Argument '{arg_name}' not supported. Ignored"),
-            }
-        }
-    }
-
-    // validation
-    if parsed_args.difficulty > 0
-        && (!parsed_args.vanity_prefix.is_empty() || !parsed_args.vanity_npub_prefix.is_empty())
-    {
-        panic!("You can cannot specify difficulty and vanity at the same time.");
-    }
-    if parsed_args.vanity_prefix.len() > 64 {
-        panic!("The vanity prefix cannot be longer than 64 characters.");
-    }
-    if !parsed_args.vanity_prefix.is_empty() {
-        // check valid hexa characters
-        let hex_re = Regex::new(r"^([0-9a-f]*)$").unwrap();
-        if !hex_re.is_match(parsed_args.vanity_prefix.as_str()) {
-            panic!("The vanity prefix can only contain hexadecimal characters.");
-        }
-    }
-    if parsed_args.vanity_npub_prefix.len() > 59 {
-        panic!("The vanity npub prefix cannot be longer than 59 characters.");
-    }
-    if !parsed_args.vanity_npub_prefix.is_empty() {
-        // check valid hexa characters
-        let hex_re = Regex::new(r"^([02-9ac-hj-np-z]*)$").unwrap();
-        if !hex_re.is_match(parsed_args.vanity_npub_prefix.as_str()) {
-            panic!("The vanity npub prefix can only contain characters supported by Bech32.");
-        }
-    }
-
-    parsed_args
 }
