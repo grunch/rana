@@ -45,11 +45,11 @@ Usage:
 Options:
   -d, --difficulty <DIFFICULTY>
           Enter the number of starting bits that should be 0. [default: 10]
-  -v, --vanity-prefix <VANITY_PREFIX>
+  -v, --vanity <VANITY_PREFIX>
           Enter the prefix your public key should have when expressed
           as hexadecimal. This can be combined with --vanity-n,
           but beware of extra calculations required. [default: ]
-  -n, --vanity-npub-prefix <VANITY_NPUB_PREFIX>
+  -n, --vanity-n <VANITY_NPUB_PREFIX>
           Enter the prefix your public key should have when expressed
           in npub format (Bech32 encoding).
           This can be combined with --vanity, but beware of extra

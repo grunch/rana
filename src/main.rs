@@ -24,32 +24,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let vanity_prefix = parsed_args.vanity_prefix;
     let vanity_npub_prefix = parsed_args.vanity_npub_prefix;
 
-    if difficulty > 0 && (!vanity_prefix.is_empty() || !vanity_npub_prefix.is_empty()) {
-        panic!("You can cannot specify difficulty and vanity at the same time.");
-    }
-    if vanity_prefix.len() > 64 {
-        panic!("The vanity prefix cannot be longer than 64 characters.");
-    }
-
-    if !vanity_prefix.is_empty() {
-        // check valid hexa characters
-        let hex_re = Regex::new(r"^([0-9a-f]*)$").unwrap();
-        if !hex_re.is_match(vanity_prefix.as_str()) {
-            panic!("The vanity prefix can only contain hexadecimal characters.");
-        }
-    }
-
-    if vanity_npub_prefix.len() > 59 {
-        panic!("The vanity npub prefix cannot be longer than 59 characters.");
-    }
-
-    if !vanity_npub_prefix.is_empty() {
-        // check valid hexa characters
-        let hex_re = Regex::new(r"^([02-9ac-hj-np-z]*)$").unwrap();
-        if !hex_re.is_match(vanity_npub_prefix.as_str()) {
-            panic!("The vanity npub prefix can only contain characters supported by Bech32.");
-        }
-    }
+    check_args(
+        difficulty,
+        vanity_prefix.as_str(),
+        vanity_npub_prefix.as_str(),
+    );
 
     //-- Calculate pow difficulty and initialize
 
