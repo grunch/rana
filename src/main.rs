@@ -105,6 +105,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                 let (secret_key, public_key) = secp.generate_keypair(&mut rng);
                 let (xonly_public_key, _) = public_key.x_only_public_key();
+                let mut vanity_npub = "".to_string();
 
                 let mut leading_zeroes = 0;
 
@@ -125,15 +126,16 @@ fn main() -> Result<(), Box<dyn Error>> {
                     )
                     .unwrap();
 
-                    for vanity_npub in vanity_npubs_ts.iter() {
+                    for cur_vanity_npub in vanity_npubs_ts.iter() {
                         let is_valid_pubkey_bech32 = bech_key.starts_with(
-                            (String::from("npub1") + vanity_npub.as_str()).as_str(),
+                            (String::from("npub1") + cur_vanity_npub.as_str()).as_str(),
                         );
 
                         // only valid if both options are valid
                         // it one of both were not required, then it's considered valid
                         is_valid_pubkey = is_valid_pubkey_hex && is_valid_pubkey_bech32;
                         if is_valid_pubkey {
+                            vanity_npub = cur_vanity_npub.clone();
                             break;
                         }
                     }
@@ -148,7 +150,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 // if one of the required conditions is satisfied
                 if is_valid_pubkey {
                     println!("==============================================");
-                    print_keys(secret_key, xonly_public_key).unwrap();
+                    print_keys(secret_key, xonly_public_key, vanity_npub).unwrap();
                     let iterations = iterations.load(Ordering::Relaxed);
                     let iter_string = format!("{iterations}");
                     let l = iter_string.len();
@@ -211,7 +213,11 @@ fn benchmark_cores(cores: usize, pow_difficulty: u8) {
 fn print_keys(
     secret_key: SecretKey,
     xonly_public_key: XOnlyPublicKey,
+    vanity_npub: String,
 ) -> Result<(), Box<dyn Error>> {
+    if vanity_npub != "" {
+        println!("Vanity npub found:         {}", vanity_npub)
+    }
     println!("Found matching public key: {xonly_public_key}");
     let private_hex = secret_key.display_secret().to_string();
     println!("Nostr private key: {private_hex:>72}");
