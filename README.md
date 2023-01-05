@@ -42,21 +42,18 @@ By default it will generate a public key with a difficulty of `10` but you can c
 Usage:
 
 ```
-  OPTIONS
-
-      --difficulty <bits>   Enter the number of starting bits that should be 0.
-
-      --vanity <prefix>     Enter the prefix your public key should have when expressed
-                            as hexadecimal.
-                            This can be combined with --vanity-n, but beware of extra
-                            calculations required.
-
-      --vanity-n <prefix>   Enter the prefix your public key should have when expressed
-                            in npub format (Bech32 encoding).
-                            This can be combined with --vanity, but beware of extra
-                            calculations required.
-
-
+Options:
+  -d, --difficulty <DIFFICULTY>
+          Enter the number of starting bits that should be 0. [default: 10]
+  -v, --vanity <VANITY_PREFIX>
+          Enter the prefix your public key should have when expressed
+          as hexadecimal. This can be combined with --vanity-n,
+          but beware of extra calculations required. [default: ]
+  -n, --vanity-n <VANITY_NPUB_PREFIX>
+          Enter the prefix your public key should have when expressed
+          in npub format (Bech32 encoding).
+          This can be combined with --vanity, but beware of extra
+          calculations required. [default: ]
 ```
 
 Examples:
