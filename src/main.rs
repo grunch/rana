@@ -1,10 +1,10 @@
 use bech32::{ToBase32, Variant};
 use bitcoin_hashes::hex::ToHex;
-use regex::Regex;
+use clap::Parser;
+use rana::cli::*;
 use secp256k1::rand::thread_rng;
 use secp256k1::{Secp256k1, SecretKey, XOnlyPublicKey};
 use std::cmp::max;
-use std::env;
 use std::error::Error;
 use std::sync::atomic::{AtomicU64, AtomicU8, Ordering};
 use std::sync::Arc;
@@ -15,11 +15,18 @@ const DIFFICULTY_DEFAULT: u8 = 10;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Parse CLI arguments
-    let parsed_args = parse_args();
+
+    let parsed_args = CLIArgs::parse();
 
     let mut difficulty = parsed_args.difficulty;
     let vanity_prefix = parsed_args.vanity_prefix;
     let vanity_npub_prefixes = parsed_args.vanity_npub_prefixes;
+
+    check_args(
+        difficulty,
+        vanity_prefix.as_str(),
+        vanity_npub_prefix.as_str(),
+    );
 
     //-- Calculate pow difficulty and initialize
 
