@@ -1,17 +1,18 @@
 [package]
 name = "rana"
-version = "0.2.1"
+version = "0.3.1"
 edition = "2021"
 license = "MIT"
 authors = ["Francisco Calderón <fjcalderon@gmail.com>"]
 description = "Nostr public key mining tool"
 
 [dependencies]
+clap = { version = "4.0.15", features = ["env", "default", "derive"] }
 bech32 = "0.9.1"
 bitcoin_hashes = "0.11.0"
 hex = "0.4.3"
 regex = "1"
-secp256k1 = { version = "0.24.1", features = ["rand-std"] }
+secp256k1 = { version = "0.25.0", features = ["rand-std"] }
 num_cpus = "1.1"
 
 [profile.release]
