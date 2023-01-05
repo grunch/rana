@@ -3,15 +3,25 @@ use regex::Regex;
 
 #[derive(Parser)]
 #[command(
-    author = "Rana",
-    about = "A simple CLI to generate nostr vanity addresses"
+    name = "Rana",
+    about = "A simple CLI to generate nostr vanity addresses",
+    author,
+    help_template = "\
+{before-help}{name} 🐸
+
+{about-with-newline}
+{author-with-newline}
+{usage-heading} {usage}
+
+{all-args}{after-help}
+",
+    version
 )]
 pub struct CLIArgs {
-    /// Name of the person to greet
     #[arg(
         short,
         long,
-        default_value_t = 10,
+        default_value_t = 0,
         help = "Enter the number of starting bits that should be 0."
     )]
     pub difficulty: u8,
