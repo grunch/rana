@@ -294,7 +294,7 @@ fn parse_args() -> CliParsedArgs {
         // check valid hexa characters
         let hex_re = Regex::new(r"^([02-9ac-hj-np-z]*)$").unwrap();
         if !hex_re.is_match(parsed_args.vanity_npub_prefix.as_str()) {
-            panic!("The vanity npub prefix can only contain characters supported by Bech32.");
+            panic!("The vanity npub prefix can only contain characters supported by Bech32: 023456789acdefghjklmnpqrstuvwxyz");
         }
     }
 
