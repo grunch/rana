@@ -80,7 +80,15 @@ $ rana --difficulty=20
 $ rana --vanity=dead
 
 $ rana --vanity-n=rana
+
+$ rana --vanity-n=rana,h0dl,n0strfan
 ```
 
 Keep in mind that you cannot specify a difficulty and a vanity prefix at the same time.
 Also, the more requirements you have, the longer it will take to reach a satisfactory public key.
+
+
+### Searching for multiple vanity targets at once
+Specifying multiple `vanity-n` targets allows you to leverage the work you've already done to generate each new `npub` candidate. Searching a candidate `npub` for additional targets is incredibly fast because it's just a trivial string compare.
+
+Statistically speaking, searching for `rana,h0dl` should take half the time that searching for `rana` and then doing a second, separate search for `hodl` would take.
