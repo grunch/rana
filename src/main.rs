@@ -20,12 +20,16 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut difficulty = parsed_args.difficulty;
     let vanity_prefix = parsed_args.vanity_prefix;
-    let vanity_npub_prefixes = parsed_args.vanity_npub_prefixes;
+    let mut vanity_npub_prefixes = <Vec<String>>::new();
+
+    for vanity_npub in parsed_args.vanity_npub_prefixes_raw_input.split(",") {
+        vanity_npub_prefixes.push(vanity_npub.to_string());
+    }
 
     check_args(
         difficulty,
         vanity_prefix.as_str(),
-        vanity_npub_prefix.as_str(),
+        &vanity_npub_prefixes,
     );
 
     //-- Calculate pow difficulty and initialize
@@ -244,75 +248,4 @@ fn get_leading_zero_bits(bytes: &[u8]) -> u8 {
         }
     }
     res
-}
-
-struct CliParsedArgs {
-    difficulty: u8,
-    vanity_prefix: String,
-    vanity_npub_prefixes: Vec<String>,
-}
-
-/// Parse and structure the CLI arguments
-fn parse_args() -> CliParsedArgs {
-    let mut parsed_args = CliParsedArgs {
-        difficulty: 0,                      // empty/disabled
-        vanity_prefix: "".to_string(),      // empty/disabled
-        vanity_npub_prefixes: <Vec<String>>::new(),  // empty/disabled
-    };
-    let args: Vec<String> = env::args().collect();
-
-    let mut vanity_npub_prefixes_raw_input:String = "".to_string();
-
-    for a in 0..args.len() {
-        let arg = &args[a];
-        // if named arg
-        if arg.starts_with("--") {
-            let arg_parts: Vec<&str> = arg.split('=').collect();
-            let arg_name = (&arg_parts[0]).to_string();
-            // remove the first "--"
-            let arg_name = &arg_name[2..arg_name.len()];
-            let arg_value = (&arg_parts[1]).to_string();
-            // now parse to the supported args
-            match arg_name {
-                "difficulty" => parsed_args.difficulty = arg_value.parse().unwrap(),
-                "vanity" => parsed_args.vanity_prefix = arg_value.to_lowercase(),
-                "vanity-n" => vanity_npub_prefixes_raw_input = arg_value.to_lowercase(),
-                _ => println!("Argument '{arg_name}' not supported. Ignored"),
-            }
-        }
-    }
-
-    // validation
-    if parsed_args.difficulty > 0
-        && (!parsed_args.vanity_prefix.is_empty() || !vanity_npub_prefixes_raw_input.is_empty())
-    {
-        panic!("You can cannot specify difficulty and vanity at the same time.");
-    }
-    if parsed_args.vanity_prefix.len() > 64 {
-        panic!("The vanity prefix cannot be longer than 64 characters.");
-    }
-    if !parsed_args.vanity_prefix.is_empty() {
-        // check valid hexa characters
-        let hex_re = Regex::new(r"^([0-9a-f]*)$").unwrap();
-        if !hex_re.is_match(parsed_args.vanity_prefix.as_str()) {
-            panic!("The vanity prefix can only contain hexadecimal characters.");
-        }
-    }
-
-    for vanity_npub_prefix in vanity_npub_prefixes_raw_input.split(",") {
-        println!("{}", vanity_npub_prefix);
-        if vanity_npub_prefix.len() > 59 {
-            panic!("The vanity npub prefix cannot be longer than 59 characters.");
-        }
-        if !vanity_npub_prefix.is_empty() {
-            // check valid hexa characters
-            let hex_re = Regex::new(r"^([02-9ac-hj-np-z]*)$").unwrap();
-            if !hex_re.is_match(vanity_npub_prefix) {
-                panic!("The vanity npub prefix can only contain characters supported by Bech32: 023456789acdefghjklmnpqrstuvwxyz");
-            }
-        }
-        parsed_args.vanity_npub_prefixes.push(vanity_npub_prefix.to_string());
-    }
-
-    parsed_args
 }
