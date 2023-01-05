@@ -52,7 +52,8 @@ Usage:
                             calculations required.
 
       --vanity-n <prefix>   Enter the prefix your public key should have when expressed
-                            in npub format (Bech32 encoding).
+                            in npub format (Bech32 encoding). Specify multiple vanity
+                            targets as a comma-separated list.
                             This can be combined with --vanity, but beware of extra
                             calculations required.
 
@@ -67,6 +68,8 @@ $ cargo run --release -- --difficulty=20
 $ cargo run --release -- --vanity=dead
 
 $ cargo run --release -- --vanity-n=rana
+
+$ cargo run --release -- --vanity-n=rana,h0dl,n0strfan
 ```
 
 If you have it installed with `cargo install`:

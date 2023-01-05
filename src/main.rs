@@ -37,8 +37,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
  
         if !vanity_npub_prefixes.is_empty() {
-            // set pow difficulty as the length of the prefix translated to bits
-            // TODO: calc POW for shortest len?
+            // set pow difficulty as the length of the first prefix translated to bits
             pow_difficulty *= (vanity_npub_prefixes[0].len() * 4) as u8;
         }
 
@@ -101,27 +100,24 @@ fn main() -> Result<(), Box<dyn Error>> {
                 // check pubkey validity depending on arg settings
                 let mut is_valid_pubkey: bool = false;
                 if vanity_ts.as_str() != "" || !vanity_npubs_ts.is_empty() {
+                    let hexa_key = xonly_public_key.to_hex();
+                    let mut is_valid_pubkey_hex = true;
+
+                    if vanity_ts.as_str() != "" {
+                        is_valid_pubkey_hex = hexa_key.starts_with(vanity_ts.as_str());
+                    }
+
+                    let bech_key: String = bech32::encode(
+                        "npub",
+                        hex::decode(hexa_key).unwrap().to_base32(),
+                        Variant::Bech32,
+                    )
+                    .unwrap();
+
                     for vanity_npub in vanity_npubs_ts.iter() {
-                        let hexa_key = xonly_public_key.to_hex();
-                        let mut is_valid_pubkey_hex = true;
-                        let mut is_valid_pubkey_bech32 = true;
-
-                        if vanity_ts.as_str() != "" {
-                            is_valid_pubkey_hex = hexa_key.starts_with(vanity_ts.as_str());
-                        }
-
-                        if vanity_npub.as_str() != "" {
-                            let bech_key: String = bech32::encode(
-                                "npub",
-                                hex::decode(hexa_key).unwrap().to_base32(),
-                                Variant::Bech32,
-                            )
-                            .unwrap();
-
-                            is_valid_pubkey_bech32 = bech_key.starts_with(
-                                (String::from("npub1") + vanity_npub.as_str()).as_str(),
-                            );
-                        }
+                        let is_valid_pubkey_bech32 = bech_key.starts_with(
+                            (String::from("npub1") + vanity_npub.as_str()).as_str(),
+                        );
 
                         // only valid if both options are valid
                         // it one of both were not required, then it's considered valid
