@@ -64,6 +64,13 @@ pub fn check_args(difficulty: u8, vanity_prefix: &str, vanity_npub_prefix: &str)
         }
     }
 
+    if !vanity_npub_prefix.is_empty() {
+        let hex_re = Regex::new(r"^([02-9ac-hj-np-z]*)$").unwrap();
+        if !hex_re.is_match(vanity_npub_prefix) {
+            panic!("The vanity npub prefix can only contain characters supported by Bech32: 023456789acdefghjklmnpqrstuvwxyz");
+        }
+    }
+
     if vanity_npub_prefix.len() > 59 {
         panic!("The vanity npub prefix cannot be longer than 59 characters.");
     }
