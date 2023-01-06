@@ -41,15 +41,16 @@ but beware of extra calculations required."
         required = false,
         default_value = "",
         help = "Enter the prefix your public key should have when expressed
-in npub format (Bech32 encoding).
+in npub format (Bech32 encoding). Specify multiple vanity
+targets as a comma-separated list.
 This can be combined with --vanity, but beware of extra
 calculations required."
     )]
-    pub vanity_npub_prefix: String,
+    pub vanity_npub_prefixes_raw_input: String,
 }
 
-pub fn check_args(difficulty: u8, vanity_prefix: &str, vanity_npub_prefix: &str) {
-    if difficulty > 0 && (!vanity_prefix.is_empty() || !vanity_npub_prefix.is_empty()) {
+pub fn check_args(difficulty: u8, vanity_prefix: &str, vanity_npub_prefixes: &Vec<String>) {
+    if difficulty > 0 && (!vanity_prefix.is_empty() || !vanity_npub_prefixes.is_empty()) {
         panic!("You can cannot specify difficulty and vanity at the same time.");
     }
     if vanity_prefix.len() > 64 {
@@ -64,14 +65,16 @@ pub fn check_args(difficulty: u8, vanity_prefix: &str, vanity_npub_prefix: &str)
         }
     }
 
-    if !vanity_npub_prefix.is_empty() {
-        let hex_re = Regex::new(r"^([02-9ac-hj-np-z]*)$").unwrap();
-        if !hex_re.is_match(vanity_npub_prefix) {
-            panic!("The vanity npub prefix can only contain characters supported by Bech32: 023456789acdefghjklmnpqrstuvwxyz");
+    for vanity_npub_prefix in vanity_npub_prefixes {
+        if !vanity_npub_prefix.is_empty() {
+            let hex_re = Regex::new(r"^([02-9ac-hj-np-z]*)$").unwrap();
+            if !hex_re.is_match(vanity_npub_prefix.as_str()) {
+                panic!("The vanity npub prefix can only contain characters supported by Bech32: 023456789acdefghjklmnpqrstuvwxyz");
+            }
+        }
+        if vanity_npub_prefix.len() > 59 {
+            panic!("The vanity npub prefix cannot be longer than 59 characters.");
         }
     }
 
-    if vanity_npub_prefix.len() > 59 {
-        panic!("The vanity npub prefix cannot be longer than 59 characters.");
-    }
 }

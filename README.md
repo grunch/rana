@@ -51,7 +51,8 @@ Options:
           but beware of extra calculations required. [default: ]
   -n, --vanity-n <VANITY_NPUB_PREFIX>
           Enter the prefix your public key should have when expressed
-          in npub format (Bech32 encoding).
+          in npub format (Bech32 encoding). Specify multiple vanity
+          targets as a comma-separated list.
           This can be combined with --vanity, but beware of extra
           calculations required. [default: ]
 ```
@@ -64,6 +65,8 @@ $ cargo run --release -- --difficulty=20
 $ cargo run --release -- --vanity=dead
 
 $ cargo run --release -- --vanity-n=rana
+
+$ cargo run --release -- --vanity-n=rana,h0dl,n0strfan
 ```
 
 If you have it installed with `cargo install`:
@@ -74,7 +77,15 @@ $ rana --difficulty=20
 $ rana --vanity=dead
 
 $ rana --vanity-n=rana
+
+$ rana --vanity-n=rana,h0dl,n0strfan
 ```
 
 Keep in mind that you cannot specify a difficulty and a vanity prefix at the same time.
 Also, the more requirements you have, the longer it will take to reach a satisfactory public key.
+
+
+### Searching for multiple vanity targets at once
+Specifying multiple `vanity-n` targets allows you to leverage the work you've already done to generate each new `npub` candidate. Searching a candidate `npub` for additional targets is incredibly fast because it's just a trivial string compare.
+
+Statistically speaking, searching for `rana,h0dl` should take half the time that searching for `rana` and then doing a second, separate search for `hodl` would take.

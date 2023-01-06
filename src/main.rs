@@ -20,12 +20,18 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut difficulty = parsed_args.difficulty;
     let vanity_prefix = parsed_args.vanity_prefix;
-    let vanity_npub_prefix = parsed_args.vanity_npub_prefix;
+    let mut vanity_npub_prefixes = <Vec<String>>::new();
+
+    for vanity_npub in parsed_args.vanity_npub_prefixes_raw_input.split(",") {
+        if vanity_npub != "" {
+            vanity_npub_prefixes.push(vanity_npub.to_string())
+        }
+    }
 
     check_args(
         difficulty,
         vanity_prefix.as_str(),
-        vanity_npub_prefix.as_str(),
+        &vanity_npub_prefixes,
     );
 
     //-- Calculate pow difficulty and initialize
@@ -33,7 +39,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // initially the same as difficulty
     let mut pow_difficulty = difficulty;
 
-    if !vanity_prefix.is_empty() || !vanity_npub_prefix.is_empty() {
+    if !vanity_prefix.is_empty() || !vanity_npub_prefixes.is_empty() {
         // there is a vanity requirement
 
         pow_difficulty = 1; // initialize for further multiplication
@@ -42,15 +48,15 @@ fn main() -> Result<(), Box<dyn Error>> {
             // set pow difficulty as the length of the prefix translated to bits
             pow_difficulty *= (vanity_prefix.len() * 4) as u8;
         }
-
-        if !vanity_npub_prefix.is_empty() {
-            // set pow difficulty as the length of the prefix translated to bits
-            pow_difficulty *= (vanity_npub_prefix.len() * 4) as u8;
+ 
+        if !vanity_npub_prefixes.is_empty() {
+            // set pow difficulty as the length of the first prefix translated to bits
+            pow_difficulty *= (vanity_npub_prefixes[0].len() * 4) as u8;
         }
 
         println!(
-            "Started mining process for a vanify prefix of: '{}' and 'npub1{}' (estimated pow: {})",
-            vanity_prefix, vanity_npub_prefix, pow_difficulty
+            "Started mining process for a vanify prefix of: '{}' and 'npub1{:?}' (estimated pow: {})",
+            vanity_prefix, vanity_npub_prefixes, pow_difficulty
         );
     } else {
         // Defaults to using difficulty
@@ -70,7 +76,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let cores = num_cpus::get();
 
     // benchmark cores
-    if !vanity_npub_prefix.is_empty() {
+    if !vanity_npub_prefixes.is_empty() {
         println!("Benchmarking of cores disabled for vanity npub key upon proper calculation.");
     } else {
         benchmark_cores(cores, pow_difficulty);
@@ -84,14 +90,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     // thread safe variables
     let best_diff = Arc::new(AtomicU8::new(pow_difficulty));
     let vanity_ts = Arc::new(vanity_prefix);
-    let vanity_npub_ts = Arc::new(vanity_npub_prefix);
+    let vanity_npubs_ts = Arc::new(vanity_npub_prefixes);
     let iterations = Arc::new(AtomicU64::new(0));
 
     // start a thread for each core for calculations
     for _ in 0..cores {
         let best_diff = best_diff.clone();
         let vanity_ts = vanity_ts.clone();
-        let vanity_npub_ts = vanity_npub_ts.clone();
+        let vanity_npubs_ts = vanity_npubs_ts.clone();
         let iterations = iterations.clone();
         thread::spawn(move || {
             let mut rng = thread_rng();
@@ -101,36 +107,44 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                 let (secret_key, public_key) = secp.generate_keypair(&mut rng);
                 let (xonly_public_key, _) = public_key.x_only_public_key();
+                let mut vanity_npub = "".to_string();
 
                 let mut leading_zeroes = 0;
 
                 // check pubkey validity depending on arg settings
-                let is_valid_pubkey: bool;
-                if vanity_ts.as_str() != "" || vanity_npub_ts.as_str() != "" {
+                let mut is_valid_pubkey: bool = false;
+                if vanity_ts.as_str() != "" || !vanity_npubs_ts.is_empty() {
                     let hexa_key = xonly_public_key.to_hex();
                     let mut is_valid_pubkey_hex = true;
-                    let mut is_valid_pubkey_bech32 = true;
 
                     if vanity_ts.as_str() != "" {
                         is_valid_pubkey_hex = hexa_key.starts_with(vanity_ts.as_str());
                     }
 
-                    if vanity_npub_ts.as_str() != "" {
-                        let bech_key: String = bech32::encode(
-                            "npub",
-                            hex::decode(hexa_key).unwrap().to_base32(),
-                            Variant::Bech32,
-                        )
-                        .unwrap();
+                    let bech_key: String = bech32::encode(
+                        "npub",
+                        hex::decode(hexa_key).unwrap().to_base32(),
+                        Variant::Bech32,
+                    )
+                    .unwrap();
 
-                        is_valid_pubkey_bech32 = bech_key.starts_with(
-                            (String::from("npub1") + vanity_npub_ts.as_str()).as_str(),
-                        );
+                    if vanity_npubs_ts.is_empty() {
+                        is_valid_pubkey = is_valid_pubkey_hex;
+                    } else {
+                        for cur_vanity_npub in vanity_npubs_ts.iter() {
+                            let is_valid_pubkey_bech32 = bech_key.starts_with(
+                                (String::from("npub1") + cur_vanity_npub.as_str()).as_str(),
+                            );
+
+                            // only valid if both options are valid
+                            // it one of both were not required, then it's considered valid
+                            is_valid_pubkey = is_valid_pubkey_hex && is_valid_pubkey_bech32;
+                            if is_valid_pubkey {
+                                vanity_npub = cur_vanity_npub.clone();
+                                break;
+                            }
+                        }
                     }
-
-                    // only valid if both options are valid
-                    // it one of both were not required, then it's considered valid
-                    is_valid_pubkey = is_valid_pubkey_hex && is_valid_pubkey_bech32;
                 } else {
                     leading_zeroes = get_leading_zero_bits(&xonly_public_key.serialize());
                     is_valid_pubkey = leading_zeroes > best_diff.load(Ordering::Relaxed);
@@ -142,7 +156,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 // if one of the required conditions is satisfied
                 if is_valid_pubkey {
                     println!("==============================================");
-                    print_keys(secret_key, xonly_public_key).unwrap();
+                    print_keys(secret_key, xonly_public_key, vanity_npub).unwrap();
                     let iterations = iterations.load(Ordering::Relaxed);
                     let iter_string = format!("{iterations}");
                     let l = iter_string.len();
@@ -205,7 +219,11 @@ fn benchmark_cores(cores: usize, pow_difficulty: u8) {
 fn print_keys(
     secret_key: SecretKey,
     xonly_public_key: XOnlyPublicKey,
+    vanity_npub: String,
 ) -> Result<(), Box<dyn Error>> {
+    if vanity_npub != "" {
+        println!("Vanity npub found:         {}", vanity_npub)
+    }
     println!("Found matching public key: {xonly_public_key}");
     let private_hex = secret_key.display_secret().to_string();
     println!("Nostr private key: {private_hex:>72}");
