@@ -5,6 +5,9 @@ edition = "2021"
 license = "MIT"
 authors = ["Francisco Calderón <fjcalderon@gmail.com>"]
 description = "Nostr public key mining tool"
+repository = "https://github.com/grunch/rana"
+keywords = ["nostr", "mining", "pubkeys", "bech32"]
+readme = "README.md"
 
 [dependencies]
 clap = { version = "4.0.15", features = ["env", "default", "derive"] }
