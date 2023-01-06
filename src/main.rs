@@ -23,7 +23,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut vanity_npub_prefixes = <Vec<String>>::new();
 
     for vanity_npub in parsed_args.vanity_npub_prefixes_raw_input.split(",") {
-        vanity_npub_prefixes.push(vanity_npub.to_string());
+        if vanity_npub != "" {
+            vanity_npub_prefixes.push(vanity_npub.to_string())
+        }
     }
 
     check_args(
@@ -126,17 +128,21 @@ fn main() -> Result<(), Box<dyn Error>> {
                     )
                     .unwrap();
 
-                    for cur_vanity_npub in vanity_npubs_ts.iter() {
-                        let is_valid_pubkey_bech32 = bech_key.starts_with(
-                            (String::from("npub1") + cur_vanity_npub.as_str()).as_str(),
-                        );
+                    if vanity_npubs_ts.is_empty() {
+                        is_valid_pubkey = is_valid_pubkey_hex;
+                    } else {
+                        for cur_vanity_npub in vanity_npubs_ts.iter() {
+                            let is_valid_pubkey_bech32 = bech_key.starts_with(
+                                (String::from("npub1") + cur_vanity_npub.as_str()).as_str(),
+                            );
 
-                        // only valid if both options are valid
-                        // it one of both were not required, then it's considered valid
-                        is_valid_pubkey = is_valid_pubkey_hex && is_valid_pubkey_bech32;
-                        if is_valid_pubkey {
-                            vanity_npub = cur_vanity_npub.clone();
-                            break;
+                            // only valid if both options are valid
+                            // it one of both were not required, then it's considered valid
+                            is_valid_pubkey = is_valid_pubkey_hex && is_valid_pubkey_bech32;
+                            if is_valid_pubkey {
+                                vanity_npub = cur_vanity_npub.clone();
+                                break;
+                            }
                         }
                     }
                 } else {
