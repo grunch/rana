@@ -22,17 +22,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     let vanity_prefix = parsed_args.vanity_prefix;
     let mut vanity_npub_prefixes = <Vec<String>>::new();
 
-    for vanity_npub in parsed_args.vanity_npub_prefixes_raw_input.split(",") {
-        if vanity_npub != "" {
+    for vanity_npub in parsed_args.vanity_npub_prefixes_raw_input.split(',') {
+        if !vanity_npub.is_empty() {
             vanity_npub_prefixes.push(vanity_npub.to_string())
         }
     }
 
-    check_args(
-        difficulty,
-        vanity_prefix.as_str(),
-        &vanity_npub_prefixes,
-    );
+    check_args(difficulty, vanity_prefix.as_str(), &vanity_npub_prefixes);
 
     //-- Calculate pow difficulty and initialize
 
@@ -48,7 +44,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             // set pow difficulty as the length of the prefix translated to bits
             pow_difficulty *= (vanity_prefix.len() * 4) as u8;
         }
- 
+
         if !vanity_npub_prefixes.is_empty() {
             // set pow difficulty as the length of the first prefix translated to bits
             pow_difficulty *= (vanity_npub_prefixes[0].len() * 4) as u8;
@@ -221,7 +217,7 @@ fn print_keys(
     xonly_public_key: XOnlyPublicKey,
     vanity_npub: String,
 ) -> Result<(), Box<dyn Error>> {
-    if vanity_npub != "" {
+    if !vanity_npub.is_empty() {
         println!("Vanity npub found:         {}", vanity_npub)
     }
     println!("Found matching public key: {xonly_public_key}");
