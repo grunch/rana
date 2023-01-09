@@ -31,8 +31,7 @@ pub struct CLIArgs {
         required = false,
         default_value = "",
         help = "Enter the prefix your public key should have when expressed
-as hexadecimal. This can be combined with --vanity-n,
-but beware of extra calculations required."
+as hexadecimal."
     )]
     pub vanity_prefix: String,
     #[arg(
@@ -42,17 +41,27 @@ but beware of extra calculations required."
         default_value = "",
         help = "Enter the prefix your public key should have when expressed
 in npub format (Bech32 encoding). Specify multiple vanity
-targets as a comma-separated list.
-This can be combined with --vanity, but beware of extra
-calculations required."
+targets as a comma-separated list."
     )]
     pub vanity_npub_prefixes_raw_input: String,
 }
 
 pub fn check_args(difficulty: u8, vanity_prefix: &str, vanity_npub_prefixes: &Vec<String>) {
-    if difficulty > 0 && (!vanity_prefix.is_empty() || !vanity_npub_prefixes.is_empty()) {
-        panic!("You can cannot specify difficulty and vanity at the same time.");
+    // Check the public key requirements
+    let mut requirements_count: u8 = 0;
+    if difficulty > 0 {
+        requirements_count += 1;
     }
+    if !vanity_prefix.is_empty() {
+        requirements_count += 1;
+    }
+    if !vanity_npub_prefixes.is_empty() {
+        requirements_count += 1;
+    }
+    if requirements_count > 1 {
+        panic!("You can cannot specify more than one requirement. You should choose between difficulty or any of the vanity formats.");
+    }
+
     if vanity_prefix.len() > 64 {
         panic!("The vanity prefix cannot be longer than 64 characters.");
     }
