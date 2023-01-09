@@ -252,7 +252,7 @@ dependencies = [
 
 [[package]]
 name = "rana"
-version = "0.3.2"
+version = "0.3.4"
 dependencies = [
  "bech32",
  "bitcoin_hashes",
