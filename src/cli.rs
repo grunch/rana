@@ -44,9 +44,16 @@ in npub format (Bech32 encoding). Specify multiple vanity
 targets as a comma-separated list."
     )]
     pub vanity_npub_prefixes_raw_input: String,
+    #[arg(
+        short = 'c',
+        long = "cores",
+        default_value_t = num_cpus::get(),
+        help = "Number of processor cores to use"
+    )]
+    pub num_cores: usize,
 }
 
-pub fn check_args(difficulty: u8, vanity_prefix: &str, vanity_npub_prefixes: &Vec<String>) {
+pub fn check_args(difficulty: u8, vanity_prefix: &str, vanity_npub_prefixes: &Vec<String>, num_cores: usize) {
     // Check the public key requirements
     let mut requirements_count: u8 = 0;
     if difficulty > 0 {
@@ -84,6 +91,12 @@ pub fn check_args(difficulty: u8, vanity_prefix: &str, vanity_npub_prefixes: &Ve
         if vanity_npub_prefix.len() > 59 {
             panic!("The vanity npub prefix cannot be longer than 59 characters.");
         }
+    }
+
+    if num_cores == 0 {
+        panic!("There can be no proof of work if one does not do work (-c, --cores must be greater than 0)");
+    } else if num_cores > num_cpus::get() {
+        panic!("Your processor has {} cores; cannot set -c, --cores to {}", num_cpus::get(), num_cores);
     }
 
 }
