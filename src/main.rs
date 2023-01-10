@@ -21,6 +21,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut difficulty = parsed_args.difficulty;
     let vanity_prefix = parsed_args.vanity_prefix;
     let mut vanity_npub_prefixes = <Vec<String>>::new();
+    let num_cores = parsed_args.num_cores;
 
     for vanity_npub in parsed_args.vanity_npub_prefixes_raw_input.split(',') {
         if !vanity_npub.is_empty() {
@@ -28,7 +29,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    check_args(difficulty, vanity_prefix.as_str(), &vanity_npub_prefixes);
+    check_args(difficulty, vanity_prefix.as_str(), &vanity_npub_prefixes, num_cores);
 
     //-- Calculate pow difficulty and initialize
 
@@ -69,19 +70,17 @@ fn main() -> Result<(), Box<dyn Error>> {
         );
     }
 
-    let cores = num_cpus::get();
-
     // benchmark cores
     if !vanity_npub_prefixes.is_empty() {
         println!("Benchmarking of cores disabled for vanity npub key upon proper calculation.");
     } else {
-        benchmark_cores(cores, pow_difficulty);
+        benchmark_cores(num_cores, pow_difficulty);
     }
 
     // Loop: generate public keys until desired public key is reached
     let now = Instant::now();
 
-    println!("Mining using {cores} cores...");
+    println!("Mining using {num_cores} cores...");
 
     // thread safe variables
     let best_diff = Arc::new(AtomicU8::new(pow_difficulty));
@@ -90,7 +89,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let iterations = Arc::new(AtomicU64::new(0));
 
     // start a thread for each core for calculations
-    for _ in 0..cores {
+    for _ in 0..num_cores {
         let best_diff = best_diff.clone();
         let vanity_ts = vanity_ts.clone();
         let vanity_npubs_ts = vanity_npubs_ts.clone();
