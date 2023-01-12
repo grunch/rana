@@ -47,14 +47,13 @@ Options:
           Enter the number of starting bits that should be 0. [default: 10]
   -v, --vanity <VANITY_PREFIX>
           Enter the prefix your public key should have when expressed
-          as hexadecimal. This can be combined with --vanity-n,
-          but beware of extra calculations required. [default: ]
+          as hexadecimal.
   -n, --vanity-n <VANITY_NPUB_PREFIX>
           Enter the prefix your public key should have when expressed
           in npub format (Bech32 encoding). Specify multiple vanity
           targets as a comma-separated list.
-          This can be combined with --vanity, but beware of extra
-          calculations required. [default: ]
+  -c, --cores <NUM_CORES>
+          Number of processor cores to use
 ```
 
 Examples:
@@ -84,8 +83,8 @@ $ rana --vanity-n=rana,h0dl,n0strfan
 Keep in mind that you cannot specify a difficulty and a vanity prefix at the same time.
 Also, the more requirements you have, the longer it will take to reach a satisfactory public key.
 
-
 ### Searching for multiple vanity targets at once
+
 Specifying multiple `vanity-n` targets allows you to leverage the work you've already done to generate each new `npub` candidate. Searching a candidate `npub` for additional targets is incredibly fast because it's just a trivial string compare.
 
 Statistically speaking, searching for `rana,h0dl` should take half the time that searching for `rana` and then doing a second, separate search for `hodl` would take.
