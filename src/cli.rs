@@ -59,6 +59,14 @@ targets as a comma-separated list."
         help = "Run only benchmarking then quit"
     )]
     pub benchmark_only: bool,
+    #[arg(
+        short,
+        long = "exit-after",
+        required = false,
+        default_value_t = false,
+        help = "Exit after a key pair is found"
+    )]
+    pub exit_after_find: bool,
 }
 
 pub fn check_args(difficulty: u8, vanity_prefix: &str, vanity_npub_prefixes: &Vec<String>, num_cores: usize) {

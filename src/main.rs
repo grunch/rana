@@ -8,7 +8,7 @@ use std::cmp::max;
 use std::error::Error;
 use std::sync::atomic::{AtomicU64, AtomicU8, Ordering};
 use std::sync::Arc;
-use std::thread;
+use std::thread::{self};
 use std::time::Instant;
 use std::process::exit;
 
@@ -24,6 +24,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut vanity_npub_prefixes = <Vec<String>>::new();
     let num_cores = parsed_args.num_cores;
     let benchmark_only = parsed_args.benchmark_only;
+    let exit_after_find = parsed_args.exit_after_find;
 
     for vanity_npub in parsed_args.vanity_npub_prefixes_raw_input.split(',') {
         if !vanity_npub.is_empty() {
@@ -93,12 +94,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     let iterations = Arc::new(AtomicU64::new(0));
 
     // start a thread for each core for calculations
+    let mut thread_handles = Vec::with_capacity(1);
     for _ in 0..num_cores {
         let best_diff = best_diff.clone();
         let vanity_ts = vanity_ts.clone();
         let vanity_npubs_ts = vanity_npubs_ts.clone();
         let iterations = iterations.clone();
-        thread::spawn(move || {
+
+        let current_handler = thread::spawn(move || {
             let mut rng = thread_rng();
             let secp = Secp256k1::new();
             loop {
@@ -170,15 +173,32 @@ fn main() -> Result<(), Box<dyn Error>> {
                         now.elapsed().as_secs(),
                         iterations / max(1, now.elapsed().as_secs())
                     );
-                }
+                    if exit_after_find {
+                        break;
+                    }        }
             }
         });
+        Vec::push(&mut thread_handles, current_handler)
     }
 
-    // put main thread to sleep
+    // put main thread to sleep until threads complete
     loop {
-        thread::sleep(std::time::Duration::from_secs(3600));
+        let mut finished = true;
+        thread::sleep(std::time::Duration::from_secs(1));
+        for ii in 0..thread_handles.len() {
+            if !thread_handles[ii].is_finished() {
+                finished = false;
+            }
+        }
+        if finished {
+            for handle in thread_handles {
+                let result = handle.join();
+                handle_reuslt(result);
+            }
+            break;
+        }
     }
+    Ok(())
 }
 
 /// Benchmark the cores capabilities for key generation
@@ -243,6 +263,19 @@ fn print_keys(
     );
 
     Ok(())
+}
+
+fn handle_reuslt(r: thread::Result<()>) {
+    match r {
+        Ok(_r) => {},
+        Err(e) => {
+            if let Some(e) = e.downcast_ref::<&'static str>() {
+                println!("Got an error: {}", e);
+            } else {
+                println!("Got an unknown error: {:?}", e);
+            }
+        }
+    }
 }
 
 #[inline]
