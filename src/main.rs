@@ -52,7 +52,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
 
         println!(
-            "Started mining process for a vanify prefix of: '{}' and 'npub1{:?}' (estimated pow: {})",
+            "Started mining process for a vanity prefix of: '{}' and 'npub1{:?}' (estimated pow: {})",
             vanity_prefix, vanity_npub_prefixes, pow_difficulty
         );
     } else {
