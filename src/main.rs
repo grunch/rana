@@ -10,6 +10,7 @@ use std::sync::atomic::{AtomicU64, AtomicU8, Ordering};
 use std::sync::Arc;
 use std::thread;
 use std::time::Instant;
+use std::process::exit;
 
 const DIFFICULTY_DEFAULT: u8 = 10;
 
@@ -22,6 +23,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let vanity_prefix = parsed_args.vanity_prefix;
     let mut vanity_npub_prefixes = <Vec<String>>::new();
     let num_cores = parsed_args.num_cores;
+    let benchmark_only = parsed_args.benchmark_only;
 
     for vanity_npub in parsed_args.vanity_npub_prefixes_raw_input.split(',') {
         if !vanity_npub.is_empty() {
@@ -70,8 +72,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     // benchmark cores
     if !vanity_npub_prefixes.is_empty() {
         println!("Benchmarking of cores disabled for vanity npub key upon proper calculation.");
-    } else {
+    }  else {
         benchmark_cores(num_cores, pow_difficulty);
+    }
+
+    if vanity_npub_prefixes.is_empty() && benchmark_only {
+        println!("Benchmark only flag is enabled. Exiting.");
+        exit(0);
     }
 
     // Loop: generate public keys until desired public key is reached

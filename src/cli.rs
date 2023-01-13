@@ -51,6 +51,14 @@ targets as a comma-separated list."
         help = "Number of processor cores to use"
     )]
     pub num_cores: usize,
+    #[arg(
+        short,
+        long = "bench-only",
+        required = false,
+        default_value_t = false,
+        help = "Run only benchmarking then quit"
+    )]
+    pub benchmark_only: bool,
 }
 
 pub fn check_args(difficulty: u8, vanity_prefix: &str, vanity_npub_prefixes: &Vec<String>, num_cores: usize) {
