@@ -36,25 +36,22 @@ fn main() -> Result<(), Box<dyn Error>> {
     // initially the same as difficulty
     let mut pow_difficulty = difficulty;
 
-    if !vanity_prefix.is_empty() || !vanity_npub_prefixes.is_empty() {
-        // there is a vanity requirement
-
-        pow_difficulty = 1; // initialize for further multiplication
-
-        if !vanity_prefix.is_empty() {
-            // set pow difficulty as the length of the prefix translated to bits
-            pow_difficulty *= (vanity_prefix.len() * 4) as u8;
-        }
-
-        if !vanity_npub_prefixes.is_empty() {
-            // set pow difficulty as the length of the first prefix translated to bits
-            pow_difficulty *= (vanity_npub_prefixes[0].len() * 4) as u8;
-        }
-
+    if !vanity_prefix.is_empty() {
+        // set pow difficulty as the length of the prefix translated to bits
+        pow_difficulty = (vanity_prefix.len() * 4) as u8;
         println!(
-            "Started mining process for a vanity prefix of: '{}' and 'npub1{:?}' (estimated pow: {})",
-            vanity_prefix, vanity_npub_prefixes, pow_difficulty
+            "Started mining process for vanity hex prefix: '{}' (estimated pow: {})",
+            vanity_prefix, pow_difficulty
         );
+
+    } else if !vanity_npub_prefixes.is_empty() {
+        // set pow difficulty as the length of the first prefix translated to bits
+        pow_difficulty = (vanity_npub_prefixes[0].len() * 4) as u8;
+        println!(
+            "Started mining process for vanity bech32 prefix[es]: 'npub1{:?}' (estimated pow: {})",
+            vanity_npub_prefixes, pow_difficulty
+        );
+
     } else {
         // Defaults to using difficulty
 
@@ -102,20 +99,20 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                 let (secret_key, public_key) = secp.generate_keypair(&mut rng);
                 let (xonly_public_key, _) = public_key.x_only_public_key();
-                let mut vanity_npub = "".to_string();
 
                 let mut leading_zeroes = 0;
+                let mut vanity_npub = "".to_string();
 
                 // check pubkey validity depending on arg settings
                 let mut is_valid_pubkey: bool = false;
-                if vanity_ts.as_str() != "" || !vanity_npubs_ts.is_empty() {
-                    let hexa_key = xonly_public_key.to_hex();
-                    let mut is_valid_pubkey_hex = true;
+                let hexa_key = xonly_public_key.to_hex();
 
-                    if vanity_ts.as_str() != "" {
-                        is_valid_pubkey_hex = hexa_key.starts_with(vanity_ts.as_str());
-                    }
+                if vanity_ts.as_str() != "" {
+                    // hex vanity search
+                    is_valid_pubkey = hexa_key.starts_with(vanity_ts.as_str());
 
+                } else if !vanity_npubs_ts.is_empty() {
+                    // bech32 vanity search
                     let bech_key: String = bech32::encode(
                         "npub",
                         hex::decode(hexa_key).unwrap().to_base32(),
@@ -123,35 +120,37 @@ fn main() -> Result<(), Box<dyn Error>> {
                     )
                     .unwrap();
 
-                    if vanity_npubs_ts.is_empty() {
-                        is_valid_pubkey = is_valid_pubkey_hex;
-                    } else {
-                        for cur_vanity_npub in vanity_npubs_ts.iter() {
-                            let is_valid_pubkey_bech32 = bech_key.starts_with(
-                                (String::from("npub1") + cur_vanity_npub.as_str()).as_str(),
-                            );
+                    for cur_vanity_npub in vanity_npubs_ts.iter() {
+                        is_valid_pubkey = bech_key.starts_with(
+                            (String::from("npub1") + cur_vanity_npub.as_str()).as_str(),
+                        );
 
-                            // only valid if both options are valid
-                            // it one of both were not required, then it's considered valid
-                            is_valid_pubkey = is_valid_pubkey_hex && is_valid_pubkey_bech32;
-                            if is_valid_pubkey {
-                                vanity_npub = cur_vanity_npub.clone();
-                                break;
-                            }
+                        if is_valid_pubkey {
+                            vanity_npub = cur_vanity_npub.clone();
+                            break;
                         }
                     }
+
                 } else {
+                    // difficulty search
                     leading_zeroes = get_leading_zero_bits(&xonly_public_key.serialize());
                     is_valid_pubkey = leading_zeroes > best_diff.load(Ordering::Relaxed);
                     if is_valid_pubkey {
-                        println!("Leading zero bits: {leading_zeroes}");
+                        // update difficulty only if it was set in the first place
+                        if best_diff.load(Ordering::Relaxed) > 0 {
+                            best_diff
+                                .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |_| {
+                                    Some(leading_zeroes)
+                                })
+                                .unwrap();
+                        }
                     }
                 }
 
                 // if one of the required conditions is satisfied
                 if is_valid_pubkey {
                     println!("==============================================");
-                    print_keys(secret_key, xonly_public_key, vanity_npub).unwrap();
+                    print_keys(secret_key, xonly_public_key, vanity_npub, leading_zeroes).unwrap();
                     let iterations = iterations.load(Ordering::Relaxed);
                     let iter_string = format!("{iterations}");
                     let l = iter_string.len();
@@ -164,15 +163,6 @@ fn main() -> Result<(), Box<dyn Error>> {
                         now.elapsed().as_secs(),
                         iterations / max(1, now.elapsed().as_secs())
                     );
-
-                    // update difficulty only if it was set in the first place
-                    if best_diff.load(Ordering::Relaxed) > 0 {
-                        best_diff
-                            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |_| {
-                                Some(leading_zeroes)
-                            })
-                            .unwrap();
-                    }
                 }
             }
         });
@@ -215,11 +205,16 @@ fn print_keys(
     secret_key: SecretKey,
     xonly_public_key: XOnlyPublicKey,
     vanity_npub: String,
+    leading_zeroes: u8,
 ) -> Result<(), Box<dyn Error>> {
-    if !vanity_npub.is_empty() {
-        println!("Vanity npub found:         {}", vanity_npub)
+    if leading_zeroes != 0 {
+        println!("Leading zero bits:         {leading_zeroes}");
+    } else if !vanity_npub.is_empty() {
+        println!("Vanity npub found:         {vanity_npub}")
     }
+
     println!("Found matching public key: {xonly_public_key}");
+
     let private_hex = secret_key.display_secret().to_string();
     println!("Nostr private key: {private_hex:>72}");
 
