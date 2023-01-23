@@ -54,6 +54,12 @@ Options:
           targets as a comma-separated list.
   -c, --cores <NUM_CORES>
           Number of processor cores to use
+  -r, --restore <MNEMONIC_PHRASE>
+          Restore from mnemonic to public private key
+  -g, --generate <WORD_COUNT>
+          Word count of mnemonic to be generated. Should be either 12,18 or 24
+  -p, --passphrase <WORD_COUNT>
+          Passphrase used for restoring mnemonic to keypair
 ```
 
 Examples:
