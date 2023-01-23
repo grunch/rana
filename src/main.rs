@@ -1,7 +1,9 @@
 use bech32::{ToBase32, Variant};
 use bitcoin_hashes::hex::ToHex;
 use clap::Parser;
+
 use rana::cli::*;
+use rana::mnemonic::handle_mnemonic;
 use secp256k1::rand::thread_rng;
 use secp256k1::{Secp256k1, SecretKey, XOnlyPublicKey};
 use std::cmp::max;
@@ -15,9 +17,11 @@ const DIFFICULTY_DEFAULT: u8 = 10;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Parse CLI arguments
-
     let parsed_args = CLIArgs::parse();
 
+    // Handle mnemonic part if arguments is set
+    handle_mnemonic(&parsed_args);
+    
     let mut difficulty = parsed_args.difficulty;
     let vanity_prefix = parsed_args.vanity_prefix;
     let mut vanity_npub_prefixes = <Vec<String>>::new();
@@ -29,7 +33,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    check_args(difficulty, vanity_prefix.as_str(), &vanity_npub_prefixes, num_cores);
+    check_args(
+        difficulty,
+        vanity_prefix.as_str(),
+        &vanity_npub_prefixes,
+        num_cores,
+    );
 
     //-- Calculate pow difficulty and initialize
 
@@ -43,7 +52,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             "Started mining process for vanity hex prefix: '{}' (estimated pow: {})",
             vanity_prefix, pow_difficulty
         );
-
     } else if !vanity_npub_prefixes.is_empty() {
         // set pow difficulty as the length of the first prefix translated to bits
         pow_difficulty = (vanity_npub_prefixes[0].len() * 4) as u8;
@@ -51,7 +59,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             "Started mining process for vanity bech32 prefix[es]: 'npub1{:?}' (estimated pow: {})",
             vanity_npub_prefixes, pow_difficulty
         );
-
     } else {
         // Defaults to using difficulty
 
@@ -110,7 +117,6 @@ fn main() -> Result<(), Box<dyn Error>> {
                 if vanity_ts.as_str() != "" {
                     // hex vanity search
                     is_valid_pubkey = hexa_key.starts_with(vanity_ts.as_str());
-
                 } else if !vanity_npubs_ts.is_empty() {
                     // bech32 vanity search
                     let bech_key: String = bech32::encode(
@@ -130,7 +136,6 @@ fn main() -> Result<(), Box<dyn Error>> {
                             break;
                         }
                     }
-
                 } else {
                     // difficulty search
                     leading_zeroes = get_leading_zero_bits(&xonly_public_key.serialize());

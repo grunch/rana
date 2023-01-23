@@ -51,6 +51,39 @@ targets as a comma-separated list."
         help = "Number of processor cores to use"
     )]
     pub num_cores: usize,
+
+    
+    #[arg(
+        short = 'r',
+        long = "restore",
+        help = "Restore from mnemonic to public private key",
+        default_value_t = String::from(""),
+        required = false
+        
+    )]
+    pub mnemonic: String,
+
+
+    #[arg(
+        short = 'g',
+        long = "generate",
+        help = "Generate mnemonic using wordcount. Should be 12,18 or 24",
+        default_value_t = 0,
+        required = false
+        
+    )]
+    pub word_count: usize,
+
+    #[arg(
+        short = 'p',
+        long = "passphrase",
+        help = "Passphrase used for restoring mnemonic to keypair",
+        default_value_t = String::from(""),
+        required = false
+        
+    )]
+    pub mnemonic_passphrase: String,
+    
 }
 
 pub fn check_args(difficulty: u8, vanity_prefix: &str, vanity_npub_prefixes: &Vec<String>, num_cores: usize) {
