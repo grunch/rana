@@ -72,6 +72,14 @@ $ cargo run --release -- --vanity=dead
 $ cargo run --release -- --vanity-n=rana
 
 $ cargo run --release -- --vanity-n=rana,h0dl,n0strfan
+
+# Generate key pair with 12 words mnemonic
+$ cargo run --release -- -g 12
+
+# Restore key pair from mnemonic. Use quotes and separate each word with a space
+$ cargo run --release -- -r "congress evoke onion donate fantasy soccer project fiction envelope body faith mean"
+
+
 ```
 
 If you have it installed with `cargo install`:
