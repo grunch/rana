@@ -640,9 +640,9 @@ dependencies = [
 
 [[package]]
 name = "nostr"
-version = "0.15.0"
+version = "0.16.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "561371374f77b18cfa4c650bf65e8ca6b160ac3c2069dab6f2bd20a701d3687a"
+checksum = "c6a7a3e8b52d432cdddb409d960a21ba166448de1b6dae6019ee1b917759a964"
 dependencies = [
  "aes",
  "base64 0.21.0",
@@ -662,9 +662,9 @@ dependencies = [
 
 [[package]]
 name = "nostr-sdk"
-version = "0.15.0"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1b54fbc254a9caa8a6c49f6ae5dc9f4cd42eae9bf519c4836b427e6bc18f2c6"
+checksum = "ff34681bc3bbc52401233a6bd0510fe402f554badd593ef7725b0ab9ea3f4fb3"
 dependencies = [
  "futures-util",
  "log",

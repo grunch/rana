@@ -17,7 +17,7 @@ hex = "0.4.3"
 regex = "1"
 secp256k1 = { version = "0.25.0", features = ["rand-std"] }
 num_cpus = "1.1"
-nostr-sdk = "0.15.0"
+nostr-sdk = "0.16.0"
 
 [profile.release]
 lto = "fat"
