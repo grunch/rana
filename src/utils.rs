@@ -44,7 +44,7 @@ pub fn print_keys(
         println!("Vanity npub found:         {vanity_npub}")
     }
 
-    //println!("Found matching public key: {xonly_public_key}");
+    println!("Found matching public key: {xonly_public_key}");
 
     let private_hex = secret_key.clone();
     println!("Nostr private key: {private_hex:>72}");
