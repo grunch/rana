@@ -1,11 +1,14 @@
 use bech32::{ToBase32, Variant};
+use bip39::Mnemonic;
 use bitcoin_hashes::hex::ToHex;
 use clap::Parser;
 
+use nostr_sdk::prelude::{FromMnemonic, GenerateMnemonic, Keys};
 use rana::cli::*;
 use rana::mnemonic::handle_mnemonic;
+use rana::utils::{benchmark_cores, get_leading_zero_bits, print_keys};
 use secp256k1::rand::thread_rng;
-use secp256k1::{Secp256k1, SecretKey, XOnlyPublicKey};
+use secp256k1::Secp256k1;
 use std::cmp::max;
 use std::error::Error;
 use std::sync::atomic::{AtomicU64, AtomicU8, Ordering};
@@ -20,8 +23,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     let parsed_args = CLIArgs::parse();
 
     // Handle mnemonic part if arguments is set
-    handle_mnemonic(&parsed_args);
-    
+    if parsed_args.vanity_prefix.len() == 0
+        && parsed_args.vanity_npub_prefixes_raw_input.len() == 0
+        && parsed_args.difficulty == 0
+    {
+        handle_mnemonic(&parsed_args);
+    }
+
     let mut difficulty = parsed_args.difficulty;
     let vanity_prefix = parsed_args.vanity_prefix;
     let mut vanity_npub_prefixes = <Vec<String>>::new();
@@ -101,18 +109,51 @@ fn main() -> Result<(), Box<dyn Error>> {
         thread::spawn(move || {
             let mut rng = thread_rng();
             let secp = Secp256k1::new();
+            let mut keys;
+            let mut mnemonic;
+
+            let mut xonly_pub_key;
             loop {
+                let mut mnemonic_option: Option<Mnemonic> = None;
                 iterations.fetch_add(1, Ordering::Relaxed);
 
-                let (secret_key, public_key) = secp.generate_keypair(&mut rng);
-                let (xonly_public_key, _) = public_key.x_only_public_key();
+                let secret_key_string: String;
+                let xonly_public_key_serialized;
+                let hexa_key;
+
+                // Use mnemonics to generate key pair
+                if parsed_args.word_count > 0 {
+                    mnemonic = Keys::generate_mnemonic(parsed_args.word_count)
+                        .expect("Couldn't not generate mnemonic");
+
+                    mnemonic_option = Some(mnemonic.clone()).clone();
+                    keys = Keys::from_mnemonic(mnemonic.to_string(), None).expect("");
+                    hexa_key = keys.public_key().to_hex();
+                    xonly_pub_key = hexa_key.clone();
+                    secret_key_string = keys
+                        .secret_key()
+                        .expect("Couldn't get secret key")
+                        .display_secret()
+                        .to_string();
+                    let xonly_public_key = keys.public_key();
+                    xonly_public_key_serialized = xonly_public_key.serialize()
+                } else {
+                    // Use SECP to generate key pair
+                    let (secret_key, public_key) = secp.generate_keypair(&mut rng);
+                    let (xonly_public_key, _) = public_key.x_only_public_key();
+                    hexa_key = xonly_public_key.to_hex();
+                    secret_key_string = secret_key.display_secret().to_string();
+
+                    let (xonly_public_key, _) = public_key.x_only_public_key();
+                    xonly_public_key_serialized = xonly_public_key.serialize();
+                    xonly_pub_key = hexa_key.to_string();
+                }
 
                 let mut leading_zeroes = 0;
                 let mut vanity_npub = "".to_string();
 
                 // check pubkey validity depending on arg settings
                 let mut is_valid_pubkey: bool = false;
-                let hexa_key = xonly_public_key.to_hex();
 
                 if vanity_ts.as_str() != "" {
                     // hex vanity search
@@ -138,7 +179,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     }
                 } else {
                     // difficulty search
-                    leading_zeroes = get_leading_zero_bits(&xonly_public_key.serialize());
+                    leading_zeroes = get_leading_zero_bits(&xonly_public_key_serialized);
                     is_valid_pubkey = leading_zeroes > best_diff.load(Ordering::Relaxed);
                     if is_valid_pubkey {
                         // update difficulty only if it was set in the first place
@@ -153,9 +194,24 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
 
                 // if one of the required conditions is satisfied
+                let mut mnemonic_str = None;
+                match mnemonic_option {
+                    Some(mnemonic_obj) => {
+                        mnemonic_str = Some(mnemonic_obj.to_string());
+                    }
+                    None => {}
+                }
+                
                 if is_valid_pubkey {
                     println!("==============================================");
-                    print_keys(secret_key, xonly_public_key, vanity_npub, leading_zeroes).unwrap();
+                    print_keys(
+                        secret_key_string,
+                        xonly_pub_key.clone(),
+                        vanity_npub,
+                        leading_zeroes,
+                        mnemonic_str,
+                    )
+                    .unwrap();
                     let iterations = iterations.load(Ordering::Relaxed);
                     let iter_string = format!("{iterations}");
                     let l = iter_string.len();
@@ -177,82 +233,4 @@ fn main() -> Result<(), Box<dyn Error>> {
     loop {
         thread::sleep(std::time::Duration::from_secs(3600));
     }
-}
-
-/// Benchmark the cores capabilities for key generation
-fn benchmark_cores(cores: usize, pow_difficulty: u8) {
-    let mut hashes_per_second_per_core = 0;
-
-    println!("Benchmarking a single core for 5 seconds...");
-    let now = Instant::now();
-    let secp = Secp256k1::new();
-    let mut rng = thread_rng();
-    loop {
-        let (_secret_key, public_key) = secp.generate_keypair(&mut rng);
-        let (xonly_public_key, _) = public_key.x_only_public_key();
-        get_leading_zero_bits(&xonly_public_key.serialize());
-        hashes_per_second_per_core += 1;
-        if now.elapsed().as_secs() > 5 {
-            break;
-        }
-    }
-    hashes_per_second_per_core /= 10;
-    println!("A single core can mine roughly {hashes_per_second_per_core} h/s!");
-
-    let estimated_hashes = 2_u128.pow(pow_difficulty as u32);
-    println!("Searching for prefix of {pow_difficulty} specific bits");
-    let estimate = estimated_hashes as f32 / hashes_per_second_per_core as f32 / cores as f32;
-    println!("This is estimated to take about {estimate} seconds");
-}
-
-/// Print private and public keys to the output
-fn print_keys(
-    secret_key: SecretKey,
-    xonly_public_key: XOnlyPublicKey,
-    vanity_npub: String,
-    leading_zeroes: u8,
-) -> Result<(), Box<dyn Error>> {
-    if leading_zeroes != 0 {
-        println!("Leading zero bits:         {leading_zeroes}");
-    } else if !vanity_npub.is_empty() {
-        println!("Vanity npub found:         {vanity_npub}")
-    }
-
-    println!("Found matching public key: {xonly_public_key}");
-
-    let private_hex = secret_key.display_secret().to_string();
-    println!("Nostr private key: {private_hex:>72}");
-
-    println!(
-        "Nostr public key (npub): {:>65}",
-        bech32::encode(
-            "npub",
-            hex::decode(xonly_public_key.to_hex())?.to_base32(),
-            Variant::Bech32
-        )?
-    );
-    println!(
-        "Nostr private key (nsec): {:>64}",
-        bech32::encode(
-            "nsec",
-            hex::decode(private_hex)?.to_base32(),
-            Variant::Bech32
-        )?
-    );
-
-    Ok(())
-}
-
-#[inline]
-fn get_leading_zero_bits(bytes: &[u8]) -> u8 {
-    let mut res = 0_u8;
-    for b in bytes {
-        if *b == 0 {
-            res += 8;
-        } else {
-            res += b.leading_zeros() as u8;
-            return res;
-        }
-    }
-    res
 }

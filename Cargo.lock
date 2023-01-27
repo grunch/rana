@@ -795,6 +795,7 @@ name = "rana"
 version = "0.3.6"
 dependencies = [
  "bech32",
+ "bip39",
  "bitcoin_hashes 0.11.0",
  "clap",
  "hex",
