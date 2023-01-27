@@ -41,6 +41,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
+    //-- Calculate pow difficulty and initialize
     check_args(
         difficulty,
         vanity_prefix.as_str(),
@@ -48,8 +49,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         num_cores,
     );
 
-    //-- Calculate pow difficulty and initialize
-
+    
     // initially the same as difficulty
     let mut pow_difficulty = difficulty;
 
@@ -109,12 +109,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         thread::spawn(move || {
             let mut rng = thread_rng();
             let secp = Secp256k1::new();
+
             let mut keys;
             let mut mnemonic;
-
             let mut xonly_pub_key;
+
             loop {
-                let mut mnemonic_option: Option<Mnemonic> = None;
+                let mut uses_mnemonic: Option<Mnemonic> = None;
                 iterations.fetch_add(1, Ordering::Relaxed);
 
                 let secret_key_string: String;
@@ -126,7 +127,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     mnemonic = Keys::generate_mnemonic(parsed_args.word_count)
                         .expect("Couldn't not generate mnemonic");
 
-                    mnemonic_option = Some(mnemonic.clone()).clone();
+                    uses_mnemonic = Some(mnemonic.clone()).clone();
                     keys = Keys::from_mnemonic(mnemonic.to_string(), None).expect("");
                     hexa_key = keys.public_key().to_hex();
                     xonly_pub_key = hexa_key.clone();
@@ -193,15 +194,16 @@ fn main() -> Result<(), Box<dyn Error>> {
                     }
                 }
 
-                // if one of the required conditions is satisfied
+                
                 let mut mnemonic_str = None;
-                match mnemonic_option {
+                match uses_mnemonic {
                     Some(mnemonic_obj) => {
                         mnemonic_str = Some(mnemonic_obj.to_string());
                     }
                     None => {}
                 }
-                
+
+                // if one of the required conditions is satisfied
                 if is_valid_pubkey {
                     println!("==============================================");
                     print_keys(
