@@ -3,6 +3,7 @@ use bip39::Mnemonic;
 use bitcoin_hashes::hex::ToHex;
 use clap::Parser;
 
+use nostr_sdk::prelude::constants::SCHNORR_PUBLIC_KEY_SIZE;
 use nostr_sdk::prelude::{FromMnemonic, GenerateMnemonic, Keys};
 use rana::cli::*;
 use rana::mnemonic::handle_mnemonic;
@@ -49,7 +50,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         num_cores,
     );
 
-    
     // initially the same as difficulty
     let mut pow_difficulty = difficulty;
 
@@ -119,7 +119,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 iterations.fetch_add(1, Ordering::Relaxed);
 
                 let secret_key_string: String;
-                let xonly_public_key_serialized;
+                let xonly_public_key_serialized:[u8; SCHNORR_PUBLIC_KEY_SIZE];
                 let hexa_key;
 
                 // Use mnemonics to generate key pair
@@ -127,10 +127,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                     mnemonic = Keys::generate_mnemonic(parsed_args.word_count)
                         .expect("Couldn't not generate mnemonic");
 
-                    uses_mnemonic = Some(mnemonic.clone()).clone();
+                    uses_mnemonic = Some(mnemonic.clone());
                     keys = Keys::from_mnemonic(mnemonic.to_string(), None).expect("");
                     hexa_key = keys.public_key().to_hex();
-                    xonly_pub_key = hexa_key.clone();
+                    xonly_pub_key = hexa_key.to_string();
                     secret_key_string = keys
                         .secret_key()
                         .expect("Couldn't get secret key")
@@ -194,7 +194,6 @@ fn main() -> Result<(), Box<dyn Error>> {
                     }
                 }
 
-                
                 let mut mnemonic_str = None;
                 match uses_mnemonic {
                     Some(mnemonic_obj) => {
@@ -208,7 +207,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     println!("==============================================");
                     print_keys(
                         secret_key_string,
-                        xonly_pub_key.clone(),
+                        xonly_pub_key,
                         vanity_npub,
                         leading_zeroes,
                         mnemonic_str,
