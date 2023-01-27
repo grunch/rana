@@ -67,7 +67,7 @@ pub fn print_keys(
     );
     match mnemonic {
         Some(mnemonic_value) => {
-            println!("Mnemonic word): {}", mnemonic_value);
+            println!("Mnemonic: {}", mnemonic_value);
         }
         None => {}
     }
