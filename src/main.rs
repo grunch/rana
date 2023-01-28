@@ -131,15 +131,16 @@ fn main() -> Result<(), Box<dyn Error>> {
                     if !vanity_npubs_pre_ts.is_empty() && !vanity_npubs_post_ts.is_empty() {
                         for cur_vanity_npub_pre in vanity_npubs_pre_ts.iter() {
                             for cur_vanity_npub_post in vanity_npubs_post_ts.iter() {
-                            is_valid_pubkey = bech_key.starts_with(
-                                (String::from("npub1") + cur_vanity_npub_pre.as_str()).as_str(),
-                            ) && bech_key.ends_with(cur_vanity_npub_post.as_str());
+                                is_valid_pubkey = bech_key.starts_with(
+                                    (String::from("npub1") + cur_vanity_npub_pre.as_str()).as_str(),
+                                ) && bech_key.ends_with(cur_vanity_npub_post.as_str());
 
-                            if is_valid_pubkey {
-                                vanity_npub = cur_vanity_npub_pre.clone() + "..." + cur_vanity_npub_post.clone().as_str();
-                                break;
+                                if is_valid_pubkey {
+                                    vanity_npub = cur_vanity_npub_pre.clone() + "..." + cur_vanity_npub_post.clone().as_str();
+                                    break;
+                                }
                             }
-                        }
+                            if is_valid_pubkey {break;}
                         }
                     }
                     else if !vanity_npubs_pre_ts.is_empty() {
