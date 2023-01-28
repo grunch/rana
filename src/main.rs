@@ -50,12 +50,28 @@ fn main() -> Result<(), Box<dyn Error>> {
             vanity_prefix, pow_difficulty
         );
 
+    } else if !vanity_npub_prefixes.is_empty() && !vanity_npub_suffixes.is_empty() {
+        // set pow difficulty as the length of the first prefix + first suffix translated to bits
+        pow_difficulty = ((vanity_npub_prefixes[0].len() * 4) + (vanity_npub_suffixes[0].len() * 4)) as u8;
+        println!(
+            "Started mining process for vanity bech32 prefix[es]: 'npub1{:?}' and suffix[es]: '...{:?}' (estimated pow: {})",
+            vanity_npub_prefixes, vanity_npub_suffixes, pow_difficulty
+        );
+
     } else if !vanity_npub_prefixes.is_empty() {
         // set pow difficulty as the length of the first prefix translated to bits
         pow_difficulty = (vanity_npub_prefixes[0].len() * 4) as u8;
         println!(
             "Started mining process for vanity bech32 prefix[es]: 'npub1{:?}' (estimated pow: {})",
             vanity_npub_prefixes, pow_difficulty
+        );
+
+    } else if !vanity_npub_suffixes.is_empty() {
+        // set pow difficulty as the length of the first suffix translated to bits
+        pow_difficulty = (vanity_npub_suffixes[0].len() * 4) as u8;
+        println!(
+            "Started mining process for vanity bech32 suffix[es]: '...{:?}' (estimated pow: {})",
+            vanity_npub_suffixes, pow_difficulty
         );
 
     } else {
