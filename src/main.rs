@@ -218,7 +218,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                         iterations / max(1, now.elapsed().as_secs())
                     );
                     if qr {
-                        print_qr(secret_key)
+                        print_qr(secret_key).unwrap();
                     }
                 }
             }
@@ -309,13 +309,19 @@ fn get_leading_zero_bits(bytes: &[u8]) -> u8 {
     res
 }
 
-fn print_qr(secret_key: SecretKey) {
+fn print_qr(secret_key: SecretKey) -> Result<(), Box<dyn Error>> {
     let private_hex = secret_key.display_secret().to_string();
-    let code = QrCode::new(private_hex).unwrap();
+    let nsec = bech32::encode(
+        "nsec",
+        hex::decode(private_hex)?.to_base32(),
+        Variant::Bech32,
+    )?;
+    let code = QrCode::new(nsec).unwrap();
     let qr = code
         .render::<unicode::Dense1x2>()
         .dark_color(unicode::Dense1x2::Light)
         .light_color(unicode::Dense1x2::Dark)
         .build();
     println!("{qr}");
+    Ok(())
 }
