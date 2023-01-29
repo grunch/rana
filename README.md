@@ -54,6 +54,8 @@ Options:
           targets as a comma-separated list.
   -c, --cores <NUM_CORES>
           Number of processor cores to use
+  -q, --qr
+          Print QR code of the private key
 ```
 
 Examples:

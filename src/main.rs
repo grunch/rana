@@ -1,6 +1,8 @@
 use bech32::{ToBase32, Variant};
 use bitcoin_hashes::hex::ToHex;
 use clap::Parser;
+use qrcode::render::unicode;
+use qrcode::QrCode;
 use rana::cli::*;
 use secp256k1::rand::thread_rng;
 use secp256k1::{Secp256k1, SecretKey, XOnlyPublicKey};
@@ -22,6 +24,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let vanity_prefix = parsed_args.vanity_prefix;
     let mut vanity_npub_prefixes = <Vec<String>>::new();
     let num_cores = parsed_args.num_cores;
+    let qr = parsed_args.qr;
 
     for vanity_npub in parsed_args.vanity_npub_prefixes_raw_input.split(',') {
         if !vanity_npub.is_empty() {
@@ -163,6 +166,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                         now.elapsed().as_secs(),
                         iterations / max(1, now.elapsed().as_secs())
                     );
+                    if qr {
+                        print_qr(secret_key)
+                    }
                 }
             }
         });
@@ -250,4 +256,15 @@ fn get_leading_zero_bits(bytes: &[u8]) -> u8 {
         }
     }
     res
+}
+
+fn print_qr(secret_key: SecretKey) {
+    let private_hex = secret_key.display_secret().to_string();
+    let code = QrCode::new(private_hex).unwrap();
+    let qr = code
+        .render::<unicode::Dense1x2>()
+        .dark_color(unicode::Dense1x2::Light)
+        .light_color(unicode::Dense1x2::Dark)
+        .build();
+    println!("{qr}");
 }
