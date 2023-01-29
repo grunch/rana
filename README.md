@@ -48,8 +48,12 @@ Options:
   -v, --vanity <VANITY_PREFIX>
           Enter the prefix your public key should have when expressed
           as hexadecimal.
-  -n, --vanity-n <VANITY_NPUB_PREFIX>
+  -n, --vanity-n-prefix <VANITY_NPUB_PREFIXES_RAW_INPUT>
           Enter the prefix your public key should have when expressed
+          in npub format (Bech32 encoding). Specify multiple vanity
+          targets as a comma-separated list.
+  -s, --vanity-n-suffix <VANITY_NPUB_SUFFIXES_RAW_INPUT>
+          Enter the suffix your public key should have when expressed
           in npub format (Bech32 encoding). Specify multiple vanity
           targets as a comma-separated list.
   -c, --cores <NUM_CORES>
@@ -65,9 +69,14 @@ $ cargo run --release -- --difficulty=20
 
 $ cargo run --release -- --vanity=dead
 
-$ cargo run --release -- --vanity-n=rana
+$ cargo run --release -- --vanity-n-prefix=rana
 
-$ cargo run --release -- --vanity-n=rana,h0dl,n0strfan
+$ cargo run --release -- -n=rana,h0dl,n0strfan
+
+$ cargo run --release -- --vanity-n-suffix=ranaend
+
+# You can combine prefix and suffix
+$ cargo run --release -- -n=rana,h0dl,n0strfan -s theend,end
 ```
 
 If you have it installed with `cargo install`:
@@ -77,9 +86,11 @@ $ rana --difficulty=20
 
 $ rana --vanity=dead
 
-$ rana --vanity-n=rana
+$ rana --vanity-n-prefix=rana
 
-$ rana --vanity-n=rana,h0dl,n0strfan
+$ rana -n=rana,h0dl,n0strfan
+
+$ rana -n=rana,h0dl,n0strfan -s theend,end
 ```
 
 Keep in mind that you cannot specify a difficulty and a vanity prefix at the same time.
@@ -87,6 +98,6 @@ Also, the more requirements you have, the longer it will take to reach a satisfa
 
 ### Searching for multiple vanity targets at once
 
-Specifying multiple `vanity-n` targets allows you to leverage the work you've already done to generate each new `npub` candidate. Searching a candidate `npub` for additional targets is incredibly fast because it's just a trivial string compare.
+Specifying multiple `vanity-n-*` targets allows you to leverage the work you've already done to generate each new `npub` candidate. Searching a candidate `npub` for additional targets is incredibly fast because it's just a trivial string compare.
 
 Statistically speaking, searching for `rana,h0dl` should take half the time that searching for `rana` and then doing a second, separate search for `hodl` would take.
