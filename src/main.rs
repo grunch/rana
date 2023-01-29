@@ -38,7 +38,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    check_args(difficulty, vanity_prefix.as_str(), &vanity_npub_prefixes, &vanity_npub_suffixes, num_cores);
+    check_args(
+        difficulty,
+        vanity_prefix.as_str(),
+        &vanity_npub_prefixes,
+        &vanity_npub_suffixes,
+        num_cores,
+    );
 
     //-- Calculate pow difficulty and initialize
 
@@ -52,15 +58,14 @@ fn main() -> Result<(), Box<dyn Error>> {
             "Started mining process for vanity hex prefix: '{}' (estimated pow: {})",
             vanity_prefix, pow_difficulty
         );
-
     } else if !vanity_npub_prefixes.is_empty() && !vanity_npub_suffixes.is_empty() {
         // set pow difficulty as the length of the first prefix + first suffix translated to bits
-        pow_difficulty = ((vanity_npub_prefixes[0].len() * 4) + (vanity_npub_suffixes[0].len() * 4)) as u8;
+        pow_difficulty =
+            ((vanity_npub_prefixes[0].len() * 4) + (vanity_npub_suffixes[0].len() * 4)) as u8;
         println!(
             "Started mining process for vanity bech32 prefix[es]: 'npub1{:?}' and suffix[es]: '...{:?}' (estimated pow: {})",
             vanity_npub_prefixes, vanity_npub_suffixes, pow_difficulty
         );
-
     } else if !vanity_npub_prefixes.is_empty() {
         // set pow difficulty as the length of the first prefix translated to bits
         pow_difficulty = (vanity_npub_prefixes[0].len() * 4) as u8;
@@ -68,7 +73,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             "Started mining process for vanity bech32 prefix[es]: 'npub1{:?}' (estimated pow: {})",
             vanity_npub_prefixes, pow_difficulty
         );
-
     } else if !vanity_npub_suffixes.is_empty() {
         // set pow difficulty as the length of the first suffix translated to bits
         pow_difficulty = (vanity_npub_suffixes[0].len() * 4) as u8;
@@ -76,7 +80,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             "Started mining process for vanity bech32 suffix[es]: '...{:?}' (estimated pow: {})",
             vanity_npub_suffixes, pow_difficulty
         );
-
     } else {
         // Defaults to using difficulty
 
@@ -137,7 +140,6 @@ fn main() -> Result<(), Box<dyn Error>> {
                 if vanity_ts.as_str() != "" {
                     // hex vanity search
                     is_valid_pubkey = hexa_key.starts_with(vanity_ts.as_str());
-
                 } else if !vanity_npubs_pre_ts.is_empty() || !vanity_npubs_post_ts.is_empty() {
                     // bech32 vanity search
                     let bech_key: String = bech32::encode(
@@ -152,17 +154,21 @@ fn main() -> Result<(), Box<dyn Error>> {
                             for cur_vanity_npub_post in vanity_npubs_post_ts.iter() {
                                 is_valid_pubkey = bech_key.starts_with(
                                     (String::from("npub1") + cur_vanity_npub_pre.as_str()).as_str(),
-                                ) && bech_key.ends_with(cur_vanity_npub_post.as_str());
+                                ) && bech_key
+                                    .ends_with(cur_vanity_npub_post.as_str());
 
                                 if is_valid_pubkey {
-                                    vanity_npub = cur_vanity_npub_pre.clone() + "..." + cur_vanity_npub_post.clone().as_str();
+                                    vanity_npub = cur_vanity_npub_pre.clone()
+                                        + "..."
+                                        + cur_vanity_npub_post.clone().as_str();
                                     break;
                                 }
                             }
-                            if is_valid_pubkey {break;}
+                            if is_valid_pubkey {
+                                break;
+                            }
                         }
-                    }
-                    else if !vanity_npubs_pre_ts.is_empty() {
+                    } else if !vanity_npubs_pre_ts.is_empty() {
                         for cur_vanity_npub in vanity_npubs_pre_ts.iter() {
                             is_valid_pubkey = bech_key.starts_with(
                                 (String::from("npub1") + cur_vanity_npub.as_str()).as_str(),
@@ -173,8 +179,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                                 break;
                             }
                         }
-                    }
-                    else {
+                    } else {
                         for cur_vanity_npub in vanity_npubs_post_ts.iter() {
                             is_valid_pubkey = bech_key.ends_with(cur_vanity_npub.as_str());
 
@@ -184,7 +189,6 @@ fn main() -> Result<(), Box<dyn Error>> {
                             }
                         }
                     }
-
                 } else {
                     // difficulty search
                     leading_zeroes = get_leading_zero_bits(&xonly_public_key.serialize());

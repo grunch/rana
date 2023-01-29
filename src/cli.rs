@@ -71,7 +71,13 @@ targets as a comma-separated list."
     pub qr: bool,
 }
 
-pub fn check_args(difficulty: u8, vanity_prefix: &str, vanity_npub_prefixes: &Vec<String>, vanity_npub_suffixes: &Vec<String>, num_cores: usize) {
+pub fn check_args(
+    difficulty: u8,
+    vanity_prefix: &str,
+    vanity_npub_prefixes: &Vec<String>,
+    vanity_npub_suffixes: &Vec<String>,
+    num_cores: usize,
+) {
     // Check the public key requirements
     let mut requirements_count: u8 = 0;
     if difficulty > 0 {
@@ -127,7 +133,10 @@ pub fn check_args(difficulty: u8, vanity_prefix: &str, vanity_npub_prefixes: &Ve
     if num_cores == 0 {
         panic!("There can be no proof of work if one does not do work (-c, --cores must be greater than 0)");
     } else if num_cores > num_cpus::get() {
-        panic!("Your processor has {} cores; cannot set -c, --cores to {}", num_cpus::get(), num_cores);
+        panic!(
+            "Your processor has {} cores; cannot set -c, --cores to {}",
+            num_cpus::get(),
+            num_cores
+        );
     }
-
 }
