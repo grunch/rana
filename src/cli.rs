@@ -61,6 +61,14 @@ targets as a comma-separated list."
         help = "Number of processor cores to use"
     )]
     pub num_cores: usize,
+    #[arg(
+        short,
+        long = "qr",
+        required = false,
+        default_value_t = false,
+        help = "Print QR code of the private key"
+    )]
+    pub qr: bool,
 }
 
 pub fn check_args(difficulty: u8, vanity_prefix: &str, vanity_npub_prefixes: &Vec<String>, vanity_npub_suffixes: &Vec<String>, num_cores: usize) {
