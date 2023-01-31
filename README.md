@@ -58,17 +58,14 @@ Options:
           targets as a comma-separated list.
   -c, --cores <NUM_CORES>
           Number of processor cores to use
-<<<<<<< HEAD
   -r, --restore <MNEMONIC_PHRASE>
           Restore from mnemonic to public private key
   -g, --generate <WORD_COUNT>
           Word count of mnemonic to be generated. Should be either 12,18 or 24
   -p, --passphrase <WORD_COUNT>
           Passphrase used for restoring mnemonic to keypair
-=======
   -q, --qr
           Print QR code of the private key
->>>>>>> main
 ```
 
 Examples:
@@ -80,24 +77,20 @@ $ cargo run --release -- --vanity=dead
 
 $ cargo run --release -- --vanity-n-prefix=rana
 
-<<<<<<< HEAD
 $ cargo run --release -- --vanity-n=rana,h0dl,n0strfan
 
-# Generate key pair with 12 words mnemonic
-$ cargo run --release -- -g 12
-
-# Restore key pair from mnemonic. Use quotes and separate each word with a space
-$ cargo run --release -- -r "congress evoke onion donate fantasy soccer project fiction envelope body faith mean"
-
-
-=======
 $ cargo run --release -- -n=rana,h0dl,n0strfan
 
 $ cargo run --release -- --vanity-n-suffix=ranaend
 
 # You can combine prefix and suffix
 $ cargo run --release -- -n=rana,h0dl,n0strfan -s theend,end
->>>>>>> main
+
+# Generate key pair with 12 words mnemonic
+$ cargo run --release -- -g 12
+
+# Restore key pair from mnemonic. Use quotes and separate each word with a space
+$ cargo run --release -- -r "congress evoke onion donate fantasy soccer project fiction envelope body faith mean"
 ```
 
 If you have it installed with `cargo install`:
