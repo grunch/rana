@@ -36,7 +36,7 @@ as hexadecimal."
     pub vanity_prefix: String,
     #[arg(
         short = 'n',
-        long = "vanity-n",
+        long = "vanity-n-prefix",
         required = false,
         default_value = "",
         help = "Enter the prefix your public key should have when expressed
@@ -44,6 +44,16 @@ in npub format (Bech32 encoding). Specify multiple vanity
 targets as a comma-separated list."
     )]
     pub vanity_npub_prefixes_raw_input: String,
+    #[arg(
+        short = 's',
+        long = "vanity-n-suffix",
+        required = false,
+        default_value = "",
+        help = "Enter the suffix your public key should have when expressed
+in npub format (Bech32 encoding). Specify multiple vanity
+targets as a comma-separated list."
+    )]
+    pub vanity_npub_suffixes_raw_input: String,
     #[arg(
         short = 'c',
         long = "cores",
@@ -84,9 +94,23 @@ targets as a comma-separated list."
     )]
     pub mnemonic_passphrase: String,
     
+    #[arg(
+        short,
+        long = "qr",
+        required = false,
+        default_value_t = false,
+        help = "Print QR code of the private key"
+    )]
+    pub qr: bool,
 }
 
-pub fn check_args(difficulty: u8, vanity_prefix: &str, vanity_npub_prefixes: &Vec<String>, num_cores: usize) {
+pub fn check_args(
+    difficulty: u8,
+    vanity_prefix: &str,
+    vanity_npub_prefixes: &Vec<String>,
+    vanity_npub_suffixes: &Vec<String>,
+    num_cores: usize,
+) {
     // Check the public key requirements
     let mut requirements_count: u8 = 0;
     if difficulty > 0 {
@@ -95,9 +119,10 @@ pub fn check_args(difficulty: u8, vanity_prefix: &str, vanity_npub_prefixes: &Ve
     if !vanity_prefix.is_empty() {
         requirements_count += 1;
     }
-    if !vanity_npub_prefixes.is_empty() {
+    if !vanity_npub_prefixes.is_empty() || !vanity_npub_suffixes.is_empty() {
         requirements_count += 1;
     }
+
     if requirements_count > 1 {
         panic!("You can cannot specify more than one requirement. You should choose between difficulty or any of the vanity formats.");
     }
@@ -126,10 +151,25 @@ pub fn check_args(difficulty: u8, vanity_prefix: &str, vanity_npub_prefixes: &Ve
         }
     }
 
+    for vanity_npub_suffix in vanity_npub_suffixes {
+        if !vanity_npub_suffix.is_empty() {
+            let hex_re = Regex::new(r"^([02-9ac-hj-np-z]*)$").unwrap();
+            if !hex_re.is_match(vanity_npub_suffix.as_str()) {
+                panic!("The vanity npub suffix can only contain characters supported by Bech32: 023456789acdefghjklmnpqrstuvwxyz");
+            }
+        }
+        if vanity_npub_suffix.len() > 59 {
+            panic!("The vanity npub suffix cannot be longer than 59 characters.");
+        }
+    }
+
     if num_cores == 0 {
         panic!("There can be no proof of work if one does not do work (-c, --cores must be greater than 0)");
     } else if num_cores > num_cpus::get() {
-        panic!("Your processor has {} cores; cannot set -c, --cores to {}", num_cpus::get(), num_cores);
+        panic!(
+            "Your processor has {} cores; cannot set -c, --cores to {}",
+            num_cpus::get(),
+            num_cores
+        );
     }
-
 }

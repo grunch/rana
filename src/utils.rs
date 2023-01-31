@@ -1,4 +1,5 @@
 use bech32::{ToBase32, Variant};
+use qrcode::{render::unicode, QrCode};
 use std::{error::Error, time::Instant};
 
 use nostr_sdk::prelude::Secp256k1;
@@ -87,4 +88,21 @@ pub fn get_leading_zero_bits(bytes: &[u8]) -> u8 {
         }
     }
     res
+}
+
+pub fn print_qr(secret_key_string: String) -> Result<(), Box<dyn Error>> {
+    let private_hex = secret_key_string;
+    let nsec = bech32::encode(
+        "nsec",
+        hex::decode(private_hex)?.to_base32(),
+        Variant::Bech32,
+    )?;
+    let code = QrCode::new(nsec).unwrap();
+    let qr = code
+        .render::<unicode::Dense1x2>()
+        .dark_color(unicode::Dense1x2::Light)
+        .light_color(unicode::Dense1x2::Dark)
+        .build();
+    println!("{qr}");
+    Ok(())
 }

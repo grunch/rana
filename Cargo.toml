@@ -1,9 +1,9 @@
 [package]
 name = "rana"
-version = "0.3.6"
+version = "0.4.1"
 edition = "2021"
 license = "MIT"
-authors = ["Francisco Calderón <fjcalderon@gmail.com>"]
+authors = ["Francisco Calderón <negrunch@grunch.dev>"]
 description = "Nostr public key mining tool"
 repository = "https://github.com/grunch/rana"
 keywords = ["nostr", "mining", "pubkeys", "bech32"]
@@ -19,6 +19,7 @@ secp256k1 = { version = "0.25.0", features = ["rand-std"] }
 num_cpus = "1.1"
 nostr-sdk = "0.16.0"
 bip39 = "1.0.1"
+qrcode = { version = "0.12", default-features = false }
 
 [profile.release]
 lto = "fat"
