@@ -99,7 +99,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let vanity_ts = Arc::new(vanity_prefix);
     let vanity_npubs_ts = Arc::new(vanity_npub_prefixes);
     let iterations = Arc::new(AtomicU64::new(0));
-    
 
     // start a thread for each core for calculations
     for _ in 0..num_cores {
@@ -107,8 +106,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let vanity_ts = vanity_ts.clone();
         let vanity_npubs_ts = vanity_npubs_ts.clone();
         let iterations = iterations.clone();
-        
-        
+
         thread::spawn(move || {
             let mut rng = thread_rng();
             let secp = Secp256k1::new();
@@ -116,23 +114,28 @@ fn main() -> Result<(), Box<dyn Error>> {
             let mut keys;
             let mut mnemonic;
             let mut xonly_pub_key;
-
+            
+            // Parse args again for thread
+            let args = CLIArgs::parse();
             loop {
                 let mut uses_mnemonic: Option<Mnemonic> = None;
                 iterations.fetch_add(1, Ordering::Relaxed);
 
                 let secret_key_string: String;
-                let xonly_public_key_serialized:[u8; SCHNORR_PUBLIC_KEY_SIZE];
+                let xonly_public_key_serialized: [u8; SCHNORR_PUBLIC_KEY_SIZE];
                 let hexa_key;
-                
 
                 // Use mnemonics to generate key pair
-                if parsed_args.word_count > 0 {
-                    mnemonic = Keys::generate_mnemonic(parsed_args.word_count)
+                if args.word_count > 0 {
+                    mnemonic = Keys::generate_mnemonic(args.word_count)
                         .expect("Couldn't not generate mnemonic");
 
                     uses_mnemonic = Some(mnemonic.clone());
-                    keys = Keys::from_mnemonic(mnemonic.to_string(), None).expect("Error generating keys from mnemonic");
+                    keys = Keys::from_mnemonic(
+                        mnemonic.to_string(),
+                        Some(format!("{}", args.mnemonic_passphrase)),
+                    )
+                    .expect("Error generating keys from mnemonic");
                     hexa_key = keys.public_key().to_hex();
                     xonly_pub_key = hexa_key.to_string();
                     secret_key_string = keys
@@ -140,7 +143,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                         .expect("Couldn't get secret key")
                         .display_secret()
                         .to_string();
-                    
+
                     xonly_public_key_serialized = keys.public_key().serialize();
                 } else {
                     // Use SECP to generate key pair
