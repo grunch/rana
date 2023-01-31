@@ -128,6 +128,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let vanity_ts = vanity_ts.clone();
         let vanity_npubs_pre_ts = vanity_npubs_pre_ts.clone();
         let vanity_npubs_post_ts = vanity_npubs_post_ts.clone();
+        let passphrase = Arc::new(parsed_args.mnemonic_passphrase.clone());
         let iterations = iterations.clone();
 
         thread::spawn(move || {
@@ -138,8 +139,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             let mut mnemonic;
             let mut xonly_pub_key;
 
-            // Parse args again for thread
-            let args = CLIArgs::parse();
             loop {
                 let mut uses_mnemonic: Option<Mnemonic> = None;
                 iterations.fetch_add(1, Ordering::Relaxed);
@@ -149,14 +148,14 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let hexa_key;
 
                 // Use mnemonics to generate key pair
-                if args.word_count > 0 {
-                    mnemonic = Keys::generate_mnemonic(args.word_count)
+                if parsed_args.word_count > 0 {
+                    mnemonic = Keys::generate_mnemonic(parsed_args.word_count)
                         .expect("Couldn't not generate mnemonic");
 
                     uses_mnemonic = Some(mnemonic.clone());
                     keys = Keys::from_mnemonic(
                         mnemonic.to_string(),
-                        Some(format!("{}", args.mnemonic_passphrase)),
+                        Some(format!("{}", passphrase.as_str())),
                     )
                     .expect("Error generating keys from mnemonic");
                     hexa_key = keys.public_key().to_hex();
