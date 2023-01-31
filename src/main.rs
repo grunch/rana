@@ -25,11 +25,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let parsed_args = CLIArgs::parse();
 
     // Handle mnemonic part if arguments is set
-    if parsed_args.vanity_prefix.len() == 0
-        && parsed_args.vanity_npub_prefixes_raw_input.len() == 0
-        && parsed_args.vanity_npub_suffixes_raw_input.len() == 0
-        && parsed_args.difficulty == 0
-    {
+    if parsed_args.mnemonic.len() > 0 {
         handle_mnemonic(&parsed_args);
     }
 
