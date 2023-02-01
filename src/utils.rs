@@ -1,9 +1,9 @@
-use bech32::{ToBase32, Variant};
-use qrcode::{render::unicode, QrCode};
-use std::{error::Error, time::Instant};
+use std::time::Instant;
 
-use nostr_sdk::prelude::Secp256k1;
-use secp256k1::rand::thread_rng;
+use bip39::Mnemonic;
+use nostr::prelude::*;
+use qrcode::render::unicode;
+use qrcode::QrCode;
 
 /// Benchmark the cores capabilities for key generation
 pub fn benchmark_cores(cores: usize, pow_difficulty: u8) {
@@ -12,7 +12,7 @@ pub fn benchmark_cores(cores: usize, pow_difficulty: u8) {
     println!("Benchmarking a single core for 5 seconds...");
     let now = Instant::now();
     let secp = Secp256k1::new();
-    let mut rng = thread_rng();
+    let mut rng = rand::thread_rng();
     loop {
         let (_secret_key, public_key) = secp.generate_keypair(&mut rng);
         let (xonly_public_key, _) = public_key.x_only_public_key();
@@ -33,40 +33,36 @@ pub fn benchmark_cores(cores: usize, pow_difficulty: u8) {
 
 /// Print private and public keys to the output
 pub fn print_keys(
-    secret_key: String,
-    xonly_public_key: String,
+    keys: &Keys,
     vanity_npub: String,
     leading_zeroes: u8,
-    mnemonic: Option<String>,
-) -> Result<(), Box<dyn Error>> {
+    mnemonic: Option<Mnemonic>,
+) -> Result<()> {
     if leading_zeroes != 0 {
         println!("Leading zero bits:         {leading_zeroes}");
     } else if !vanity_npub.is_empty() {
         println!("Vanity npub found:         {vanity_npub}")
     }
 
-    println!("Found matching public key: {xonly_public_key}");
+    println!("Found matching public key: {}", keys.public_key());
 
-    println!("Nostr private key: {secret_key:>72}");
+    println!(
+        "Nostr private key: {:>72}",
+        keys.secret_key()?.display_secret()
+    );
 
     println!(
         "Nostr public key (npub): {:>65}",
-        bech32::encode(
-            "npub",
-            hex::decode(xonly_public_key)?.to_base32(),
-            Variant::Bech32
-        )?
+        keys.public_key().to_bech32()?
     );
+
     println!(
         "Nostr private key (nsec): {:>64}",
-        bech32::encode(
-            "nsec",
-            hex::decode(secret_key)?.to_base32(),
-            Variant::Bech32
-        )?
+        keys.secret_key()?.to_bech32()?
     );
-    if let Some(mnemonic_value) = mnemonic {
-        println!("Mnemonic:                  {}", mnemonic_value);
+
+    if let Some(mnemonic) = mnemonic {
+        println!("Mnemonic: {mnemonic}");
     }
 
     Ok(())
@@ -86,14 +82,9 @@ pub fn get_leading_zero_bits(bytes: &[u8]) -> u8 {
     res
 }
 
-pub fn print_qr(secret_key_string: String) -> Result<(), Box<dyn Error>> {
-    let private_hex = secret_key_string;
-    let nsec = bech32::encode(
-        "nsec",
-        hex::decode(private_hex)?.to_base32(),
-        Variant::Bech32,
-    )?;
-    let code = QrCode::new(nsec).unwrap();
+pub fn print_qr(secret_key: SecretKey) -> Result<()> {
+    let nsec = secret_key.to_bech32()?;
+    let code = QrCode::new(nsec)?;
     let qr = code
         .render::<unicode::Dense1x2>()
         .dark_color(unicode::Dense1x2::Light)
