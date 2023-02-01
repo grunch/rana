@@ -10,15 +10,11 @@ keywords = ["nostr", "mining", "pubkeys", "bech32"]
 readme = "README.md"
 
 [dependencies]
+bip39 = "1.0"
 clap = { version = "4.0.15", features = ["env", "default", "derive"] }
-bech32 = "0.9.1"
-bitcoin_hashes = "0.11.0"
-hex = "0.4.3"
 regex = "1"
-secp256k1 = { version = "0.25.0", features = ["rand-std"] }
 num_cpus = "1.1"
-nostr-sdk = "0.16.0"
-bip39 = "1.0.1"
+nostr = { version = "0.17", default-features = false, features = ["nip06", "nip19"] }
 qrcode = { version = "0.12", default-features = false }
 
 [profile.release]

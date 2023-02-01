@@ -1,9 +1,8 @@
 use std::process::exit;
 
+use nostr::prelude::*;
+
 use crate::cli::CLIArgs;
-use bech32::{ToBase32, Variant};
-use bitcoin_hashes::hex::ToHex;
-use nostr_sdk::prelude::{FromMnemonic, GenerateMnemonic, Keys, ToBech32};
 
 pub fn handle_mnemonic(parsed_args: &CLIArgs) {
     if parsed_args.word_count > 0 {
@@ -14,15 +13,12 @@ pub fn handle_mnemonic(parsed_args: &CLIArgs) {
         let mnemonic = Keys::generate_mnemonic(word_count).expect("Couldn't not generate mnemonic");
         let keys = Keys::from_mnemonic(mnemonic.to_string(), None).expect("");
 
-        let pub_key_as_hex =
-            hex::decode(keys.public_key().to_hex()).expect("Error decoding public key to hex");
-        let nostr_pubkey = bech32::encode("npub", pub_key_as_hex.to_base32(), Variant::Bech32)
-            .expect("Error encoding to bech32");
-
         println!(
             "Mnemonic: {}\nPublic key: {}\nPrivate key: {}",
             mnemonic,
-            nostr_pubkey,
+            keys.public_key()
+                .to_bech32()
+                .expect("Could not get public key bech32 conversion"),
             keys.secret_key()
                 .expect("Could not get secret key")
                 .to_bech32()
@@ -38,14 +34,11 @@ pub fn handle_mnemonic(parsed_args: &CLIArgs) {
         )
         .expect("Error creating key pair from mnemonic");
 
-        let pub_key_as_hex =
-            hex::decode(keys.public_key().to_hex()).expect("Error decoding public key to hex");
-        let nostr_pubkey = bech32::encode("npub", pub_key_as_hex.to_base32(), Variant::Bech32)
-            .expect("Error encoding to bech32");
-
         println!(
             "Public key: {}\nPrivate key: {}",
-            nostr_pubkey,
+            keys.public_key()
+                .to_bech32()
+                .expect("Could not get public key bech32 conversion"),
             keys.secret_key()
                 .expect("Could not get secret key")
                 .to_bech32()

@@ -1,26 +1,19 @@
-use clap::Parser;
 use std::cmp::max;
-use std::error::Error;
 use std::sync::atomic::{AtomicU64, AtomicU8, Ordering};
 use std::sync::Arc;
 use std::thread;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
-use bech32::{ToBase32, Variant};
 use bip39::Mnemonic;
-use bitcoin_hashes::hex::ToHex;
-use nostr_sdk::prelude::constants::SCHNORR_PUBLIC_KEY_SIZE;
-use nostr_sdk::prelude::{FromMnemonic, GenerateMnemonic, Keys};
-use secp256k1::rand::thread_rng;
-use secp256k1::Secp256k1;
-
+use clap::Parser;
+use nostr::prelude::*;
 use rana::cli::*;
 use rana::mnemonic::handle_mnemonic;
 use rana::utils::{benchmark_cores, get_leading_zero_bits, print_keys, print_qr};
 
 const DIFFICULTY_DEFAULT: u8 = 10;
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<()> {
     // Parse CLI arguments
     let parsed_args = CLIArgs::parse();
 
@@ -29,12 +22,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         handle_mnemonic(&parsed_args);
     }
 
-    let mut difficulty = parsed_args.difficulty;
-    let vanity_prefix = parsed_args.vanity_prefix;
-    let mut vanity_npub_prefixes = <Vec<String>>::new();
-    let mut vanity_npub_suffixes = <Vec<String>>::new();
-    let num_cores = parsed_args.num_cores;
-    let qr = parsed_args.qr;
+    let mut difficulty: u8 = parsed_args.difficulty;
+    let vanity_prefix: String = parsed_args.vanity_prefix;
+    let mut vanity_npub_prefixes: Vec<String> = Vec::new();
+    let mut vanity_npub_suffixes: Vec<String> = Vec::new();
+    let num_cores: usize = parsed_args.num_cores;
+    let qr: bool = parsed_args.qr;
 
     for vanity_npub_pre in parsed_args.vanity_npub_prefixes_raw_input.split(',') {
         if !vanity_npub_pre.is_empty() {
@@ -57,36 +50,32 @@ fn main() -> Result<(), Box<dyn Error>> {
     );
 
     // initially the same as difficulty
-    let mut pow_difficulty = difficulty;
+    let mut pow_difficulty: u8 = difficulty;
 
     if !vanity_prefix.is_empty() {
         // set pow difficulty as the length of the prefix translated to bits
         pow_difficulty = (vanity_prefix.len() * 4) as u8;
         println!(
-            "Started mining process for vanity hex prefix: '{}' (estimated pow: {})",
-            vanity_prefix, pow_difficulty
+            "Started mining process for vanity hex prefix: '{vanity_prefix}' (estimated pow: {pow_difficulty})"
         );
     } else if !vanity_npub_prefixes.is_empty() && !vanity_npub_suffixes.is_empty() {
         // set pow difficulty as the length of the first prefix + first suffix translated to bits
         pow_difficulty =
             ((vanity_npub_prefixes[0].len() * 4) + (vanity_npub_suffixes[0].len() * 4)) as u8;
         println!(
-            "Started mining process for vanity bech32 prefix[es]: 'npub1{:?}' and suffix[es]: '...{:?}' (estimated pow: {})",
-            vanity_npub_prefixes, vanity_npub_suffixes, pow_difficulty
+            "Started mining process for vanity bech32 prefix[es]: 'npub1{vanity_npub_prefixes:?}' and suffix[es]: '...{vanity_npub_suffixes:?}' (estimated pow: {pow_difficulty})"
         );
     } else if !vanity_npub_prefixes.is_empty() {
         // set pow difficulty as the length of the first prefix translated to bits
         pow_difficulty = (vanity_npub_prefixes[0].len() * 4) as u8;
         println!(
-            "Started mining process for vanity bech32 prefix[es]: 'npub1{:?}' (estimated pow: {})",
-            vanity_npub_prefixes, pow_difficulty
+            "Started mining process for vanity bech32 prefix[es]: 'npub1{vanity_npub_prefixes:?}' (estimated pow: {pow_difficulty})"
         );
     } else if !vanity_npub_suffixes.is_empty() {
         // set pow difficulty as the length of the first suffix translated to bits
         pow_difficulty = (vanity_npub_suffixes[0].len() * 4) as u8;
         println!(
-            "Started mining process for vanity bech32 suffix[es]: '...{:?}' (estimated pow: {})",
-            vanity_npub_suffixes, pow_difficulty
+            "Started mining process for vanity bech32 suffix[es]: '...{vanity_npub_suffixes:?}' (estimated pow: {pow_difficulty})"
         );
     } else {
         // Defaults to using difficulty
@@ -98,8 +87,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
 
         println!(
-            "Started mining process with a difficulty of: {difficulty} (pow: {})",
-            pow_difficulty
+            "Started mining process with a difficulty of: {difficulty} (pow: {pow_difficulty})"
         );
     }
 
@@ -132,70 +120,40 @@ fn main() -> Result<(), Box<dyn Error>> {
         let iterations = iterations.clone();
 
         thread::spawn(move || {
-            let mut rng = thread_rng();
-            let secp = Secp256k1::new();
-
             let mut keys;
             let mut mnemonic;
-            let mut xonly_pub_key;
 
             loop {
                 let mut uses_mnemonic: Option<Mnemonic> = None;
                 iterations.fetch_add(1, Ordering::Relaxed);
-
-                let secret_key_string: String;
-                let xonly_public_key_serialized: [u8; SCHNORR_PUBLIC_KEY_SIZE];
-                let hexa_key;
 
                 // Use mnemonics to generate key pair
                 if parsed_args.word_count > 0 {
                     mnemonic = Keys::generate_mnemonic(parsed_args.word_count)
                         .expect("Couldn't not generate mnemonic");
 
-                    uses_mnemonic = Some(mnemonic.clone());
-                    keys = Keys::from_mnemonic(
-                        mnemonic.to_string(),
-                        Some(passphrase.as_str().to_string()),
-                    )
-                    .expect("Error generating keys from mnemonic");
-                    hexa_key = keys.public_key().to_hex();
-                    xonly_pub_key = hexa_key.to_string();
-                    secret_key_string = keys
-                        .secret_key()
-                        .expect("Couldn't get secret key")
-                        .display_secret()
-                        .to_string();
-
-                    xonly_public_key_serialized = keys.public_key().serialize();
+                    keys = Keys::from_mnemonic(mnemonic.to_string(), Some(passphrase.to_string()))
+                        .expect("Error generating keys from mnemonic");
+                    uses_mnemonic = Some(mnemonic);
                 } else {
-                    // Use SECP to generate key pair
-                    let (secret_key, public_key) = secp.generate_keypair(&mut rng);
-                    let (xonly_public_key, _) = public_key.x_only_public_key();
-                    hexa_key = xonly_public_key.to_hex();
-                    secret_key_string = secret_key.display_secret().to_string();
-
-                    let (xonly_public_key, _) = public_key.x_only_public_key();
-                    xonly_public_key_serialized = xonly_public_key.serialize();
-                    xonly_pub_key = hexa_key.to_string();
+                    keys = Keys::generate();
                 }
 
-                let mut leading_zeroes = 0;
-                let mut vanity_npub = "".to_string();
+                let mut leading_zeroes: u8 = 0;
+                let mut vanity_npub: String = String::new();
 
                 // check pubkey validity depending on arg settings
                 let mut is_valid_pubkey: bool = false;
 
-                if vanity_ts.as_str() != "" {
+                if !vanity_ts.is_empty() {
                     // hex vanity search
-                    is_valid_pubkey = hexa_key.starts_with(vanity_ts.as_str());
+                    is_valid_pubkey = keys
+                        .public_key()
+                        .to_string()
+                        .starts_with(vanity_ts.as_str());
                 } else if !vanity_npubs_pre_ts.is_empty() || !vanity_npubs_post_ts.is_empty() {
                     // bech32 vanity search
-                    let bech_key: String = bech32::encode(
-                        "npub",
-                        hex::decode(hexa_key).unwrap().to_base32(),
-                        Variant::Bech32,
-                    )
-                    .unwrap();
+                    let bech_key: String = keys.public_key().to_bech32().unwrap();
 
                     if !vanity_npubs_pre_ts.is_empty() && !vanity_npubs_post_ts.is_empty() {
                         for cur_vanity_npub_pre in vanity_npubs_pre_ts.iter() {
@@ -239,7 +197,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     }
                 } else {
                     // difficulty search
-                    leading_zeroes = get_leading_zero_bits(&xonly_public_key_serialized);
+                    leading_zeroes = get_leading_zero_bits(&keys.public_key().serialize());
                     is_valid_pubkey = leading_zeroes > best_diff.load(Ordering::Relaxed);
                     if is_valid_pubkey {
                         // update difficulty only if it was set in the first place
@@ -253,22 +211,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                     }
                 }
 
-                let mut mnemonic_str = None;
-                if let Some(mnemonic_obj) = uses_mnemonic {
-                    mnemonic_str = Some(mnemonic_obj.to_string());
-                }
-
                 // if one of the required conditions is satisfied
                 if is_valid_pubkey {
                     println!("==============================================");
-                    print_keys(
-                        secret_key_string.clone(),
-                        xonly_pub_key,
-                        vanity_npub,
-                        leading_zeroes,
-                        mnemonic_str,
-                    )
-                    .unwrap();
+                    print_keys(&keys, vanity_npub, leading_zeroes, uses_mnemonic).unwrap();
                     let iterations = iterations.load(Ordering::Relaxed);
                     let iter_string = format!("{iterations}");
                     let l = iter_string.len();
@@ -282,7 +228,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                         iterations / max(1, now.elapsed().as_secs())
                     );
                     if qr {
-                        print_qr(secret_key_string).unwrap();
+                        print_qr(keys.secret_key().unwrap()).unwrap();
                     }
                 }
             }
@@ -291,6 +237,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // put main thread to sleep
     loop {
-        thread::sleep(std::time::Duration::from_secs(3600));
+        thread::sleep(Duration::from_secs(3600));
     }
 }
