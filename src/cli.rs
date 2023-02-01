@@ -9,6 +9,11 @@ use regex::Regex;
     help_template = "\
 {before-help}{name} 🐸
 
+      o  o
+     ( -- )
+  /\\( ,   ,)/\\
+^^   ^^  ^^   ^^
+
 {about-with-newline}
 {author-with-newline}
 {usage-heading} {usage}

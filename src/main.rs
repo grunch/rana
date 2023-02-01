@@ -1,3 +1,4 @@
+use colored::Colorize;
 use std::cmp::max;
 use std::sync::atomic::{AtomicU64, AtomicU8, Ordering};
 use std::sync::Arc;
@@ -9,7 +10,7 @@ use clap::Parser;
 use nostr::prelude::*;
 use rana::cli::*;
 use rana::mnemonic::handle_mnemonic;
-use rana::utils::{benchmark_cores, get_leading_zero_bits, print_keys, print_qr};
+use rana::utils::{benchmark_cores, get_leading_zero_bits, print_divider, print_keys, print_qr};
 
 const DIFFICULTY_DEFAULT: u8 = 10;
 
@@ -213,7 +214,7 @@ fn main() -> Result<()> {
 
                 // if one of the required conditions is satisfied
                 if is_valid_pubkey {
-                    println!("==============================================");
+                    println!("{}", print_divider(20).bright_cyan());
                     print_keys(&keys, vanity_npub, leading_zeroes, uses_mnemonic).unwrap();
                     let iterations = iterations.load(Ordering::Relaxed);
                     let iter_string = format!("{iterations}");

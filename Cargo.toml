@@ -16,6 +16,7 @@ regex = "1"
 num_cpus = "1.1"
 nostr = { version = "0.17", default-features = false, features = ["nip06", "nip19"] }
 qrcode = { version = "0.12", default-features = false }
+colored = "2.0.0"
 
 [profile.release]
 lto = "fat"

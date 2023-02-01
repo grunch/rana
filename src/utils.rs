@@ -1,9 +1,9 @@
-use std::time::Instant;
-
 use bip39::Mnemonic;
+use colored::Colorize;
 use nostr::prelude::*;
 use qrcode::render::unicode;
 use qrcode::QrCode;
+use std::time::Instant;
 
 /// Benchmark the cores capabilities for key generation
 pub fn benchmark_cores(cores: usize, pow_difficulty: u8) {
@@ -44,25 +44,19 @@ pub fn print_keys(
         println!("Vanity npub found:         {vanity_npub}")
     }
 
-    println!("Found matching public key: {}", keys.public_key());
-
+    println!("{}", "Found matching Nostr public key:".green());
+    println!("Hex public key: {:>66}", keys.public_key().to_string());
     println!(
-        "Nostr private key: {:>72}",
-        keys.secret_key()?.display_secret()
+        "Hex private key: {:>65}",
+        keys.secret_key()?.display_secret().to_string()
     );
 
-    println!(
-        "Nostr public key (npub): {:>65}",
-        keys.public_key().to_bech32()?
-    );
+    println!("Npub public key: {:>64}", keys.public_key().to_bech32()?);
 
-    println!(
-        "Nostr private key (nsec): {:>64}",
-        keys.secret_key()?.to_bech32()?
-    );
+    println!("Nsec private key: {:>63}", keys.secret_key()?.to_bech32()?);
 
     if let Some(mnemonic) = mnemonic {
-        println!("Mnemonic: {mnemonic}");
+        println!("Mnemonic:         {mnemonic}");
     }
 
     Ok(())
@@ -92,4 +86,8 @@ pub fn print_qr(secret_key: SecretKey) -> Result<()> {
         .build();
     println!("{qr}");
     Ok(())
+}
+
+pub fn print_divider(n: usize) -> String {
+    "<<>>".repeat(n)
 }
