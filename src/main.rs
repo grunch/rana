@@ -25,7 +25,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let parsed_args = CLIArgs::parse();
 
     // Handle mnemonic part if arguments is set
-    if parsed_args.mnemonic.len() > 0 {
+    if !parsed_args.mnemonic.is_empty() {
         handle_mnemonic(&parsed_args);
     }
 
@@ -155,7 +155,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     uses_mnemonic = Some(mnemonic.clone());
                     keys = Keys::from_mnemonic(
                         mnemonic.to_string(),
-                        Some(format!("{}", passphrase.as_str())),
+                        Some(passphrase.as_str().to_string()),
                     )
                     .expect("Error generating keys from mnemonic");
                     hexa_key = keys.public_key().to_hex();
@@ -254,11 +254,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
 
                 let mut mnemonic_str = None;
-                match uses_mnemonic {
-                    Some(mnemonic_obj) => {
-                        mnemonic_str = Some(mnemonic_obj.to_string());
-                    }
-                    None => {}
+                if let Some(mnemonic_obj) = uses_mnemonic {
+                    mnemonic_str = Some(mnemonic_obj.to_string());
                 }
 
                 // if one of the required conditions is satisfied

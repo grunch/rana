@@ -62,17 +62,14 @@ targets as a comma-separated list."
     )]
     pub num_cores: usize,
 
-    
     #[arg(
         short = 'r',
         long = "restore",
         help = "Restore from mnemonic to public private key",
         default_value_t = String::from(""),
         required = false
-        
     )]
     pub mnemonic: String,
-
 
     #[arg(
         short = 'g',
@@ -80,7 +77,6 @@ targets as a comma-separated list."
         help = "Generate mnemonic using wordcount. Should be 12,18 or 24",
         default_value_t = 0,
         required = false
-        
     )]
     pub word_count: usize,
 
@@ -90,10 +86,9 @@ targets as a comma-separated list."
         help = "Passphrase used for restoring mnemonic to keypair",
         default_value_t = String::from(""),
         required = false
-        
     )]
     pub mnemonic_passphrase: String,
-    
+
     #[arg(
         short,
         long = "qr",

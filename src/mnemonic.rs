@@ -8,7 +8,7 @@ use nostr_sdk::prelude::{FromMnemonic, GenerateMnemonic, Keys, ToBech32};
 pub fn handle_mnemonic(parsed_args: &CLIArgs) {
     if parsed_args.word_count > 0 {
         let mut word_count = parsed_args.word_count;
-        if parsed_args.word_count <= 0 || parsed_args.word_count > 24 {
+        if parsed_args.word_count == 0 || parsed_args.word_count > 24 {
             word_count = 12;
         }
         let mnemonic = Keys::generate_mnemonic(word_count).expect("Couldn't not generate mnemonic");
@@ -31,7 +31,7 @@ pub fn handle_mnemonic(parsed_args: &CLIArgs) {
         exit(0)
     }
 
-    if parsed_args.mnemonic.len() > 0 {
+    if !parsed_args.mnemonic.is_empty() {
         let keys = Keys::from_mnemonic(
             parsed_args.mnemonic.to_string(),
             Some(parsed_args.mnemonic_passphrase.to_string()),

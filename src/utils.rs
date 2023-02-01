@@ -47,8 +47,7 @@ pub fn print_keys(
 
     println!("Found matching public key: {xonly_public_key}");
 
-    let private_hex = secret_key.clone();
-    println!("Nostr private key: {private_hex:>72}");
+    println!("Nostr private key: {secret_key:>72}");
 
     println!(
         "Nostr public key (npub): {:>65}",
@@ -62,15 +61,12 @@ pub fn print_keys(
         "Nostr private key (nsec): {:>64}",
         bech32::encode(
             "nsec",
-            hex::decode(private_hex)?.to_base32(),
+            hex::decode(secret_key)?.to_base32(),
             Variant::Bech32
         )?
     );
-    match mnemonic {
-        Some(mnemonic_value) => {
-            println!("Mnemonic: {}", mnemonic_value);
-        }
-        None => {}
+    if let Some(mnemonic_value) = mnemonic {
+        println!("Mnemonic:                  {}", mnemonic_value);
     }
 
     Ok(())
