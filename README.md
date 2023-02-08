@@ -73,6 +73,7 @@ Examples:
 ```bash
 $ cargo run --release -- --difficulty=20
 
+# Vanity only accepts hexadecimal values. DEAD corresponds to https://www.hexdictionary.com/hex/DEAD, not an example username string.
 $ cargo run --release -- --vanity=dead
 
 $ cargo run --release -- --vanity-n-prefix=rana
