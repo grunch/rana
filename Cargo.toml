@@ -10,11 +10,10 @@ keywords = ["nostr", "mining", "pubkeys", "bech32"]
 readme = "README.md"
 
 [dependencies]
-bip39 = "1.0"
 clap = { version = "4.0.15", features = ["env", "default", "derive"] }
 regex = "1"
 num_cpus = "1.1"
-nostr = { version = "0.17", default-features = false, features = [
+nostr = { git = "https://github.com/rust-nostr/nostr", rev = "cd8c89a68147a8538c1535d5ba6573feadf20d34", default-features = false, features = [
   "nip06",
   "nip19",
 ] }

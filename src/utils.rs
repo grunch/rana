@@ -1,5 +1,5 @@
-use bip39::Mnemonic;
 use colored::Colorize;
+use nostr::bip39::Mnemonic;
 use nostr::prelude::*;
 use qrcode::render::unicode;
 use qrcode::QrCode;
@@ -11,10 +11,9 @@ pub fn benchmark_cores(cores: usize, pow_difficulty: u8) {
 
     println!("Benchmarking a single core for 5 seconds...");
     let now = Instant::now();
-    let secp = Secp256k1::new();
     let mut rng = rand::thread_rng();
     loop {
-        let (_secret_key, public_key) = secp.generate_keypair(&mut rng);
+        let (_secret_key, public_key) = SECP256K1.generate_keypair(&mut rng);
         let (xonly_public_key, _) = public_key.x_only_public_key();
         get_leading_zero_bits(&xonly_public_key.serialize());
         hashes_per_second_per_core += 1;
