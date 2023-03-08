@@ -5,14 +5,15 @@ use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use bip39::Mnemonic;
 use clap::Parser;
+use nostr::bip39::Mnemonic;
 use nostr::prelude::*;
 use rana::cli::*;
 use rana::mnemonic::handle_mnemonic;
 use rana::utils::{benchmark_cores, get_leading_zero_bits, print_divider, print_keys, print_qr};
 
 const DIFFICULTY_DEFAULT: u8 = 10;
+const BECH32_PREFIX: &str = "npub1";
 
 fn main() -> Result<()> {
     // Parse CLI arguments
@@ -121,6 +122,8 @@ fn main() -> Result<()> {
         let iterations = iterations.clone();
 
         thread::spawn(move || {
+            let mut rng = rand::thread_rng();
+
             let mut keys;
             let mut mnemonic;
 
@@ -137,7 +140,7 @@ fn main() -> Result<()> {
                         .expect("Error generating keys from mnemonic");
                     uses_mnemonic = Some(mnemonic);
                 } else {
-                    keys = Keys::generate();
+                    keys = Keys::generate_without_keypair(&mut rng);
                 }
 
                 let mut leading_zeroes: u8 = 0;
@@ -159,10 +162,9 @@ fn main() -> Result<()> {
                     if !vanity_npubs_pre_ts.is_empty() && !vanity_npubs_post_ts.is_empty() {
                         for cur_vanity_npub_pre in vanity_npubs_pre_ts.iter() {
                             for cur_vanity_npub_post in vanity_npubs_post_ts.iter() {
-                                is_valid_pubkey = bech_key.starts_with(
-                                    (String::from("npub1") + cur_vanity_npub_pre.as_str()).as_str(),
-                                ) && bech_key
-                                    .ends_with(cur_vanity_npub_post.as_str());
+                                is_valid_pubkey = bech_key
+                                    .starts_with(&format!("{BECH32_PREFIX}{cur_vanity_npub_pre}"))
+                                    && bech_key.ends_with(cur_vanity_npub_post.as_str());
 
                                 if is_valid_pubkey {
                                     vanity_npub = cur_vanity_npub_pre.clone()
@@ -177,9 +179,8 @@ fn main() -> Result<()> {
                         }
                     } else if !vanity_npubs_pre_ts.is_empty() {
                         for cur_vanity_npub in vanity_npubs_pre_ts.iter() {
-                            is_valid_pubkey = bech_key.starts_with(
-                                (String::from("npub1") + cur_vanity_npub.as_str()).as_str(),
-                            );
+                            is_valid_pubkey =
+                                bech_key.starts_with(&format!("{BECH32_PREFIX}{cur_vanity_npub}"));
 
                             if is_valid_pubkey {
                                 vanity_npub = cur_vanity_npub.clone();
