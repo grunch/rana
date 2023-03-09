@@ -298,8 +298,9 @@ checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
 
 [[package]]
 name = "nostr"
-version = "0.19.4"
-source = "git+https://github.com/rust-nostr/nostr?rev=cd8c89a68147a8538c1535d5ba6573feadf20d34#cd8c89a68147a8538c1535d5ba6573feadf20d34"
+version = "0.19.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "377785e61e0da6a13226a4244e8c28b9a858aa0a5ed10830109f61ade1c2a3f2"
 dependencies = [
  "bech32",
  "bip39",
