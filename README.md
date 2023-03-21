@@ -4,7 +4,7 @@
 
 Mine public keys that can be used with nostr.
 
-This is based on [nip13](https://github.com/ok300/nostr-rs/blob/master/examples/nip13.rs) example.
+This is based on [nip13](https://github.com/nostr-protocol/nips/blob/master/13.md) example.
 
 Provide the desired difficulty or the vanity prefix as arguments. See below.
 
