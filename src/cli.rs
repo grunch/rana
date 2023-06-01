@@ -26,7 +26,7 @@ pub struct CLIArgs {
     #[arg(
         short,
         long,
-        default_value_t = 0,
+        default_value_t = crate::DIFFICULTY_DEFAULT,
         help = "Enter the number of starting bits that should be 0."
     )]
     pub difficulty: u8,
