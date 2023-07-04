@@ -12,6 +12,7 @@ use rana::cli::*;
 use rana::mnemonic::handle_mnemonic;
 use rana::utils::{benchmark_cores, get_leading_zero_bits, print_divider, print_keys, print_qr};
 
+const DIFFICULTY_DEFAULT: u8 = 10;
 const BECH32_PREFIX: &str = "npub1";
 
 fn main() -> Result<()> {
@@ -23,7 +24,7 @@ fn main() -> Result<()> {
         handle_mnemonic(&parsed_args);
     }
 
-    let difficulty: u8 = parsed_args.difficulty;
+    let mut difficulty: u8 = parsed_args.difficulty;
     let vanity_prefix: String = parsed_args.vanity_prefix;
     let mut vanity_npub_prefixes: Vec<String> = Vec::new();
     let mut vanity_npub_suffixes: Vec<String> = Vec::new();
@@ -80,6 +81,13 @@ fn main() -> Result<()> {
         );
     } else {
         // Defaults to using difficulty
+
+        // if difficulty not indicated, then assume default
+        if difficulty == 0 {
+            difficulty = DIFFICULTY_DEFAULT; // default
+            pow_difficulty = difficulty;
+        }
+
         println!(
             "Started mining process with a difficulty of: {difficulty} (pow: {pow_difficulty})"
         );
