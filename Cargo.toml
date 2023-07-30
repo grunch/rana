@@ -9,6 +9,10 @@ repository = "https://github.com/grunch/rana"
 keywords = ["nostr", "mining", "pubkeys", "bech32"]
 readme = "README.md"
 
+[[bin]]
+name = "rana"
+path = "src/main.rs"
+
 [dependencies]
 clap = { version = "4.0.15", features = ["env", "default", "derive"] }
 regex = "1"
