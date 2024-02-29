@@ -66,6 +66,8 @@ Options:
           Passphrase used for restoring mnemonic to keypair
   -q, --qr
           Print QR code of the private key
+  -w, --verbose_output
+          Print verbose ouput of non-matching public keys
 ```
 
 Examples:
@@ -78,7 +80,7 @@ $ cargo run --release -- --vanity=dead
 
 $ cargo run --release -- --vanity-n-prefix=rana
 
-$ cargo run --release -- --vanity-n=rana,h0dl,n0strfan
+$ cargo run --release -- --vanity-n-prefix=rana,h0dl,n0strfan
 
 $ cargo run --release -- -n=rana,h0dl,n0strfan
 

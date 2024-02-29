@@ -1,7 +1,7 @@
 use colored::Colorize;
 use std::cmp::max;
 use std::sync::atomic::{AtomicU64, AtomicU8, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -30,6 +30,7 @@ fn main() -> Result<()> {
     let mut vanity_npub_suffixes: Vec<String> = Vec::new();
     let num_cores: usize = parsed_args.num_cores;
     let qr: bool = parsed_args.qr;
+    let verbose_output: bool = parsed_args.verbose_output;
 
     for vanity_npub_pre in parsed_args.vanity_npub_prefixes_raw_input.split(',') {
         if !vanity_npub_pre.is_empty() {
@@ -214,8 +215,10 @@ fn main() -> Result<()> {
                 }
 
                 // if one of the required conditions is satisfied
+                let shared_output = Arc::new(Mutex::new(std::io::stdout()));
                 if is_valid_pubkey {
-                    println!("{}", print_divider(20).bright_cyan());
+                    let _guard = shared_output.lock().unwrap();
+                    println!("{}", print_divider(30).bright_cyan());
                     print_keys(&keys, vanity_npub, leading_zeroes, uses_mnemonic).unwrap();
                     let iterations = iterations.load(Ordering::Relaxed);
                     let iter_string = format!("{iterations}");
@@ -232,6 +235,11 @@ fn main() -> Result<()> {
                     if qr {
                         print_qr(keys.secret_key().unwrap()).unwrap();
                     }
+                    std::io::Write::flush(&mut std::io::stdout()).expect("Failed to flush stdout");
+                } else if verbose_output {
+                    let non_matching_key = keys.public_key().to_string();
+                    print!("Non-matching public key generated: {}\r", non_matching_key.red());
+                    std::io::Write::flush(&mut std::io::stdout()).expect("Failed to flush stdout");
                 }
             }
         });
