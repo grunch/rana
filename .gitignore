@@ -2,3 +2,4 @@
 *.svg
 *.data
 *.old
+/bin
