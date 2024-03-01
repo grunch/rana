@@ -102,6 +102,15 @@ targets as a comma-separated list."
         help = "Print QR code of the private key"
     )]
     pub qr: bool,
+
+    #[arg(
+        short = 'w',
+        long = "verbose-output",
+        required = false,
+        default_value_t = false,
+        help = "Print verbose ouput on non-matching public keys"
+    )]
+    pub verbose_output: bool,
 }
 
 pub fn check_args(
