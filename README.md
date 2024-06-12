@@ -17,7 +17,7 @@ Provide the desired difficulty or the vanity prefix as arguments. See below.
 Using Cargo to install (requires ~/.cargo/bin to be in PATH)
 
 ```bash
-$ cargo install rana
+cargo install rana
 ```
 
 ### Compile and execute it:
@@ -25,16 +25,16 @@ $ cargo install rana
 To compile on Ubuntu/Pop!\_OS/Debian, please install [cargo](https://www.rust-lang.org/tools/install), then run the following commands:
 
 ```bash
-$ sudo apt update
-$ sudo apt install -y cmake build-essential
+sudo apt update
+sudo apt install -y cmake build-essential
 ```
 
 Then clone the repo, build and run:
 
 ```bash
-$ git clone https://github.com/grunch/rana.git
-$ cd rana
-$ cargo run --release
+git clone https://github.com/grunch/rana.git
+cd rana
+cargo run --release
 ```
 
 By default it will generate a public key with a difficulty of `10` but you can customize its difficulty or vanity prefix with the proper parameters.
@@ -73,41 +73,41 @@ Options:
 Examples:
 
 ```bash
-$ cargo run --release -- --difficulty=20
+cargo run --release -- --difficulty=20
 
 # Vanity only accepts hexadecimal values. DEAD corresponds to https://www.hexdictionary.com/hex/DEAD, not an example username string.
-$ cargo run --release -- --vanity=dead
+cargo run --release -- --vanity=dead
 
-$ cargo run --release -- --vanity-n-prefix=rana
+cargo run --release -- --vanity-n-prefix=rana
 
-$ cargo run --release -- --vanity-n-prefix=rana,h0dl,n0strfan
+cargo run --release -- --vanity-n-prefix=rana,h0dl,n0strfan
 
-$ cargo run --release -- -n=rana,h0dl,n0strfan
+cargo run --release -- -n=rana,h0dl,n0strfan
 
-$ cargo run --release -- --vanity-n-suffix=ranaend
+cargo run --release -- --vanity-n-suffix=ranaend
 
 # You can combine prefix and suffix
-$ cargo run --release -- -n=rana,h0dl,n0strfan -s theend,end
+cargo run --release -- -n=rana,h0dl,n0strfan -s theend,end
 
 # Generate key pair with 12 words mnemonic
-$ cargo run --release -- -g 12
+cargo run --release -- -g 12
 
 # Restore key pair from mnemonic. Use quotes and separate each word with a space
-$ cargo run --release -- -r "congress evoke onion donate fantasy soccer project fiction envelope body faith mean"
+cargo run --release -- -r "congress evoke onion donate fantasy soccer project fiction envelope body faith mean"
 ```
 
 If you have it installed with `cargo install`:
 
 ```bash
-$ rana --difficulty=20
+rana --difficulty=20
 
-$ rana --vanity=dead
+rana --vanity=dead
 
-$ rana --vanity-n-prefix=rana
+rana --vanity-n-prefix=rana
 
-$ rana -n=rana,h0dl,n0strfan
+rana -n=rana,h0dl,n0strfan
 
-$ rana -n=rana,h0dl,n0strfan -s theend,end
+rana -n=rana,h0dl,n0strfan -s theend,end
 ```
 
 Keep in mind that you cannot specify a difficulty and a vanity prefix at the same time.
