@@ -15,6 +15,37 @@ use rana::utils::{benchmark_cores, get_leading_zero_bits, print_divider, print_k
 const DIFFICULTY_DEFAULT: u8 = 10;
 const BECH32_PREFIX: &str = "npub1";
 
+fn calculate_string_similarity(target: &str, candidate: &str) -> f64 {
+    let min_len = std::cmp::min(target.len(), candidate.len());
+    let matching = target
+        .chars()
+        .zip(candidate.chars())
+        .take(min_len)
+        .filter(|(a, b)| a == b)
+        .count();
+    
+    matching as f64 / target.len() as f64
+}
+
+#[derive(Clone)]
+struct BestMatch {
+    npub: String,
+    similarity: f64,
+    keys: Keys,
+    mnemonic: Option<Mnemonic>,
+}
+
+impl BestMatch {
+    fn new() -> Self {
+        BestMatch {
+            npub: String::new(),
+            similarity: 0.0,
+            keys: Keys::generate(), // Generate a default key
+            mnemonic: None,
+        }
+    }
+}
+
 fn main() -> Result<()> {
     // Parse CLI arguments
     let parsed_args = CLIArgs::parse();
@@ -31,6 +62,7 @@ fn main() -> Result<()> {
     let num_cores: usize = parsed_args.num_cores;
     let qr: bool = parsed_args.qr;
     let verbose_output: bool = parsed_args.verbose_output;
+    let best_match = Arc::new(Mutex::new(BestMatch::new()));
 
     for vanity_npub_pre in parsed_args.vanity_npub_prefixes_raw_input.split(',') {
         if !vanity_npub_pre.is_empty() {
@@ -121,6 +153,7 @@ fn main() -> Result<()> {
         let vanity_npubs_post_ts = vanity_npubs_post_ts.clone();
         let passphrase = Arc::new(parsed_args.mnemonic_passphrase.clone());
         let iterations = iterations.clone();
+        let best_match = best_match.clone();
 
         thread::spawn(move || {
             let mut rng = rand::thread_rng();
@@ -162,19 +195,28 @@ fn main() -> Result<()> {
 
                     if !vanity_npubs_pre_ts.is_empty() && !vanity_npubs_post_ts.is_empty() {
                         for cur_vanity_npub_pre in vanity_npubs_pre_ts.iter() {
-                            for cur_vanity_npub_post in vanity_npubs_post_ts.iter() {
-                                is_valid_pubkey = bech_key
-                                    .starts_with(&format!("{BECH32_PREFIX}{cur_vanity_npub_pre}"))
-                                    && bech_key.ends_with(cur_vanity_npub_post.as_str());
-
-                                if is_valid_pubkey {
-                                    vanity_npub = cur_vanity_npub_pre.clone()
-                                        + "..."
-                                        + cur_vanity_npub_post.clone().as_str();
-                                    break;
-                                }
+                            let current_prefix = bech_key.strip_prefix(BECH32_PREFIX).unwrap_or("");
+                            let similarity = calculate_string_similarity(cur_vanity_npub_pre, current_prefix);
+                            
+                            // Check exact match
+                            is_valid_pubkey = current_prefix.starts_with(cur_vanity_npub_pre);
+                            
+                            // Update best match if we have better similarity
+                            let mut best_match_guard = best_match.lock().unwrap();
+                            if similarity > best_match_guard.similarity {
+                                best_match_guard.similarity = similarity;
+                                best_match_guard.npub = current_prefix.to_string();
+                                best_match_guard.keys = keys.clone();
+                                best_match_guard.mnemonic = uses_mnemonic.clone();
+                                
+                                println!("{}", print_divider(30).bright_yellow());
+                                println!("New best match found ({}% similar):", (similarity * 100.0) as u32);
+                                print_keys(&keys, current_prefix.to_string(), 0, uses_mnemonic.clone()).unwrap();
+                                println!("Target: {}", cur_vanity_npub_pre);
+                                println!("Current: {}", current_prefix);
                             }
                             if is_valid_pubkey {
+                                vanity_npub = cur_vanity_npub_pre.clone();
                                 break;
                             }
                         }
@@ -219,6 +261,7 @@ fn main() -> Result<()> {
                 if is_valid_pubkey {
                     let _guard = shared_output.lock().unwrap();
                     println!("{}", print_divider(30).bright_cyan());
+                    println!("Found exact match!");
                     print_keys(&keys, vanity_npub, leading_zeroes, uses_mnemonic).unwrap();
                     let iterations = iterations.load(Ordering::Relaxed);
                     let iter_string = format!("{iterations}");
