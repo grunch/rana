@@ -111,6 +111,12 @@ targets as a comma-separated list."
         help = "Print verbose ouput on non-matching public keys"
     )]
     pub verbose_output: bool,
+    #[arg(
+        long,
+        default_value_t = false,
+        help = "When true, disables difficulty scaling and keeps it fixed throughout."
+    )]
+    pub no_scaling: bool,
 }
 
 pub fn check_args(
