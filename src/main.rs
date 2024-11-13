@@ -197,52 +197,51 @@ fn main() -> Result<()> {
                         for cur_vanity_npub_pre in vanity_npubs_pre_ts.iter() {
                             let current_prefix = bech_key.strip_prefix(BECH32_PREFIX).unwrap_or("");
                             let similarity = calculate_string_similarity(cur_vanity_npub_pre, current_prefix);
-                            
-                            // Check exact match
-                            is_valid_pubkey = current_prefix.starts_with(cur_vanity_npub_pre);
-                            
-                            // Update best match if we have better similarity
-                            let mut best_match_guard = best_match.lock().unwrap();
-                            if similarity > best_match_guard.similarity {
+
+                            // Check for any match above 25% similarity
+                            if similarity > 25.0 {
+                                // No need to check against best_match_guard.similarity
+                                let mut best_match_guard = best_match.lock().unwrap();
                                 best_match_guard.similarity = similarity;
                                 best_match_guard.npub = current_prefix.to_string();
                                 best_match_guard.keys = keys.clone();
                                 best_match_guard.mnemonic = uses_mnemonic.clone();
                                 
                                 println!("{}", print_divider(30).bright_yellow());
-                                println!("New best match found ({}% similar):", (similarity * 100.0) as u32);
+                                println!("Found match with {}% similarity:", (similarity * 100.0) as u32);
                                 print_keys(&keys, current_prefix.to_string(), 0, uses_mnemonic.clone()).unwrap();
                                 println!("Target: {}", cur_vanity_npub_pre);
                                 println!("Current: {}", current_prefix);
                             }
-                            if is_valid_pubkey {
+                            if current_prefix.starts_with(cur_vanity_npub_pre) {
+                                is_valid_pubkey = true;
                                 vanity_npub = cur_vanity_npub_pre.clone();
                                 break;
                             }
                         }
                     } else if !vanity_npubs_pre_ts.is_empty() {
                         for cur_vanity_npub_pre in vanity_npubs_pre_ts.iter() {
+
                             let current_prefix = bech_key.strip_prefix(BECH32_PREFIX).unwrap_or("");
                             let similarity = calculate_string_similarity(cur_vanity_npub_pre, current_prefix);
-                            
-                            // Check exact match
-                            is_valid_pubkey = current_prefix.starts_with(cur_vanity_npub_pre);
-                            
-                            // Update best match if we have better similarity
-                            let mut best_match_guard = best_match.lock().unwrap();
-                            if similarity > best_match_guard.similarity {
+
+                            // Check for any match above 25% similarity
+                            if similarity > 25.0 {
+                                // No need to check against best_match_guard.similarity
+                                let mut best_match_guard = best_match.lock().unwrap();
                                 best_match_guard.similarity = similarity;
                                 best_match_guard.npub = current_prefix.to_string();
                                 best_match_guard.keys = keys.clone();
                                 best_match_guard.mnemonic = uses_mnemonic.clone();
                                 
                                 println!("{}", print_divider(30).bright_yellow());
-                                println!("New best match found ({}% similar):", (similarity * 100.0) as u32);
+                                println!("Found match with {}% similarity:", (similarity * 100.0) as u32);
                                 print_keys(&keys, current_prefix.to_string(), 0, uses_mnemonic.clone()).unwrap();
                                 println!("Target: {}", cur_vanity_npub_pre);
                                 println!("Current: {}", current_prefix);
                             }
-                            if is_valid_pubkey {
+                            if current_prefix.starts_with(cur_vanity_npub_pre) {
+                                is_valid_pubkey = true;
                                 vanity_npub = cur_vanity_npub_pre.clone();
                                 break;
                             }
