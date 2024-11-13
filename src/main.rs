@@ -16,15 +16,24 @@ const DIFFICULTY_DEFAULT: u8 = 10;
 const BECH32_PREFIX: &str = "npub1";
 
 fn calculate_string_similarity(target: &str, candidate: &str) -> f64 {
+    // Get the shorter length of the two strings to avoid index out of bounds
     let min_len = std::cmp::min(target.len(), candidate.len());
+    
+    // If either string is empty, return 0
+    if min_len == 0 {
+        return 0.0;
+    }
+
+    // Count matching characters at the start of the string
     let matching = target
         .chars()
-        .zip(candidate.chars())
         .take(min_len)
-        .filter(|(a, b)| a == b)
+        .zip(candidate.chars().take(min_len))
+        .take_while(|(a, b)| a == b)
         .count();
     
-    matching as f64 / target.len() as f64
+    // Calculate similarity as a percentage
+    (matching as f64 / target.len() as f64) * 100.0
 }
 
 #[derive(Clone)]
@@ -198,21 +207,17 @@ fn main() -> Result<()> {
                             let current_prefix = bech_key.strip_prefix(BECH32_PREFIX).unwrap_or("");
                             let similarity = calculate_string_similarity(cur_vanity_npub_pre, current_prefix);
 
-                            // Check for any match above 25% similarity
+                            // Check for any match above 25%
                             if similarity > 25.0 {
-                                // No need to check against best_match_guard.similarity
-                                let mut best_match_guard = best_match.lock().unwrap();
-                                best_match_guard.similarity = similarity;
-                                best_match_guard.npub = current_prefix.to_string();
-                                best_match_guard.keys = keys.clone();
-                                best_match_guard.mnemonic = uses_mnemonic.clone();
-                                
                                 println!("{}", print_divider(30).bright_yellow());
-                                println!("Found match with {}% similarity:", (similarity * 100.0) as u32);
+                                println!("Found match with {:.2}% similarity:", similarity);
                                 print_keys(&keys, current_prefix.to_string(), 0, uses_mnemonic.clone()).unwrap();
-                                println!("Target: {}", cur_vanity_npub_pre);
+                                println!("Target:  {}", cur_vanity_npub_pre);
                                 println!("Current: {}", current_prefix);
+                                std::io::Write::flush(&mut std::io::stdout()).expect("Failed to flush stdout");
                             }
+
+                            // Check exact match separately
                             if current_prefix.starts_with(cur_vanity_npub_pre) {
                                 is_valid_pubkey = true;
                                 vanity_npub = cur_vanity_npub_pre.clone();
@@ -221,25 +226,20 @@ fn main() -> Result<()> {
                         }
                     } else if !vanity_npubs_pre_ts.is_empty() {
                         for cur_vanity_npub_pre in vanity_npubs_pre_ts.iter() {
-
                             let current_prefix = bech_key.strip_prefix(BECH32_PREFIX).unwrap_or("");
                             let similarity = calculate_string_similarity(cur_vanity_npub_pre, current_prefix);
 
-                            // Check for any match above 25% similarity
+                            // Check for any match above 25%
                             if similarity > 25.0 {
-                                // No need to check against best_match_guard.similarity
-                                let mut best_match_guard = best_match.lock().unwrap();
-                                best_match_guard.similarity = similarity;
-                                best_match_guard.npub = current_prefix.to_string();
-                                best_match_guard.keys = keys.clone();
-                                best_match_guard.mnemonic = uses_mnemonic.clone();
-                                
                                 println!("{}", print_divider(30).bright_yellow());
-                                println!("Found match with {}% similarity:", (similarity * 100.0) as u32);
+                                println!("Found match with {:.2}% similarity:", similarity);
                                 print_keys(&keys, current_prefix.to_string(), 0, uses_mnemonic.clone()).unwrap();
-                                println!("Target: {}", cur_vanity_npub_pre);
+                                println!("Target:  {}", cur_vanity_npub_pre);
                                 println!("Current: {}", current_prefix);
+                                std::io::Write::flush(&mut std::io::stdout()).expect("Failed to flush stdout");
                             }
+
+                            // Check exact match separately
                             if current_prefix.starts_with(cur_vanity_npub_pre) {
                                 is_valid_pubkey = true;
                                 vanity_npub = cur_vanity_npub_pre.clone();
