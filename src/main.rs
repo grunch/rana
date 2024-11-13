@@ -207,44 +207,62 @@ fn main() -> Result<()> {
                             let current_prefix = bech_key.strip_prefix(BECH32_PREFIX).unwrap_or("");
                             let similarity = calculate_string_similarity(cur_vanity_npub_pre, current_prefix);
 
-                            // Check for any match above 25%
-                            if similarity > 25.0 {
-                                println!("{}", print_divider(30).bright_yellow());
-                                println!("Found match with {:.2}% similarity:", similarity);
-                                print_keys(&keys, current_prefix.to_string(), 0, uses_mnemonic.clone()).unwrap();
-                                println!("Target:  {}", cur_vanity_npub_pre);
-                                println!("Current: {}", current_prefix);
-                                std::io::Write::flush(&mut std::io::stdout()).expect("Failed to flush stdout");
-                            }
+                            // Check exact match
+                            is_valid_pubkey = current_prefix.starts_with(cur_vanity_npub_pre);
+                            let mut best_match_guard = best_match.lock().unwrap();
+                            if similarity > best_match_guard.similarity {
+                                best_match_guard.similarity = similarity;
+                                best_match_guard.npub = current_prefix.to_string();
+                                best_match_guard.keys = keys.clone();
+                                best_match_guard.mnemonic = uses_mnemonic.clone();
+				
+                                // Check for any match above 75%
+                                if similarity >= 75.0 {
+                                    println!("{}", print_divider(30).bright_yellow());
+                                    println!("Found match with {:.2}% similarity:", similarity);
+                                    print_keys(&keys, current_prefix.to_string(), 0, uses_mnemonic.clone()).unwrap();
+                                    println!("Target:  {}", cur_vanity_npub_pre);
+                                    println!("Current: {}", current_prefix);
+                                    std::io::Write::flush(&mut std::io::stdout()).expect("Failed to flush stdout");
+                                }
 
-                            // Check exact match separately
-                            if current_prefix.starts_with(cur_vanity_npub_pre) {
-                                is_valid_pubkey = true;
-                                vanity_npub = cur_vanity_npub_pre.clone();
-                                break;
-                            }
+                                // Check exact match separately
+                                if current_prefix.starts_with(cur_vanity_npub_pre) {
+                                    is_valid_pubkey = true;
+                                    vanity_npub = cur_vanity_npub_pre.clone();
+                                    break;
+                                }
+			    }
                         }
                     } else if !vanity_npubs_pre_ts.is_empty() {
                         for cur_vanity_npub_pre in vanity_npubs_pre_ts.iter() {
                             let current_prefix = bech_key.strip_prefix(BECH32_PREFIX).unwrap_or("");
                             let similarity = calculate_string_similarity(cur_vanity_npub_pre, current_prefix);
 
-                            // Check for any match above 25%
-                            if similarity > 25.0 {
-                                println!("{}", print_divider(30).bright_yellow());
-                                println!("Found match with {:.2}% similarity:", similarity);
-                                print_keys(&keys, current_prefix.to_string(), 0, uses_mnemonic.clone()).unwrap();
-                                println!("Target:  {}", cur_vanity_npub_pre);
-                                println!("Current: {}", current_prefix);
-                                std::io::Write::flush(&mut std::io::stdout()).expect("Failed to flush stdout");
-                            }
+                            let mut best_match_guard = best_match.lock().unwrap();
+                            if similarity > best_match_guard.similarity {
+                                best_match_guard.similarity = similarity;
+                                best_match_guard.npub = current_prefix.to_string();
+                                best_match_guard.keys = keys.clone();
+                                best_match_guard.mnemonic = uses_mnemonic.clone();
+				
+                                // Check for any match above 75%
+                                if similarity >= 75.0 {
+                                    println!("{}", print_divider(30).bright_yellow());
+                                    println!("Found match with {:.2}% similarity:", similarity);
+                                    print_keys(&keys, current_prefix.to_string(), 0, uses_mnemonic.clone()).unwrap();
+                                    println!("Target:  {}", cur_vanity_npub_pre);
+                                    println!("Current: {}", current_prefix);
+                                    std::io::Write::flush(&mut std::io::stdout()).expect("Failed to flush stdout");
+                                }
 
-                            // Check exact match separately
-                            if current_prefix.starts_with(cur_vanity_npub_pre) {
-                                is_valid_pubkey = true;
-                                vanity_npub = cur_vanity_npub_pre.clone();
-                                break;
-                            }
+                                // Check exact match separately
+                                if current_prefix.starts_with(cur_vanity_npub_pre) {
+                                    is_valid_pubkey = true;
+                                    vanity_npub = cur_vanity_npub_pre.clone();
+                                    break;
+                                }
+			    }
                         }
                     } else {
                         for cur_vanity_npub in vanity_npubs_post_ts.iter() {
