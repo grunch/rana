@@ -217,10 +217,9 @@ fn main() -> Result<()> {
                                 // Check for any match above 75% but less than 100%
                                 if similarity >= 75.0 && similarity < 100.0 {
                                     println!("{}", print_divider(30).bright_yellow());
+                                    println!("Target:  {}", cur_vanity_npub_pre);
                                     println!("Found match with {:.2}% similarity:", similarity);
                                     print_keys(&keys, current_prefix.to_string(), 0, uses_mnemonic.clone()).unwrap();
-                                    println!("Target:  {}", cur_vanity_npub_pre);
-                                    println!("Current: {}", current_prefix);
                                     std::io::Write::flush(&mut std::io::stdout()).expect("Failed to flush stdout");
                                 }
     
@@ -247,10 +246,9 @@ fn main() -> Result<()> {
                                 // Check for any match above 75% but less than 100%
                                 if similarity >= 75.0 && similarity < 100.0 {
                                     println!("{}", print_divider(30).bright_yellow());
+                                    println!("Target:  {}", cur_vanity_npub_pre);
                                     println!("Found match with {:.2}% similarity:", similarity);
                                     print_keys(&keys, current_prefix.to_string(), 0, uses_mnemonic.clone()).unwrap();
-                                    println!("Target:  {}", cur_vanity_npub_pre);
-                                    println!("Current: {}", current_prefix);
                                     std::io::Write::flush(&mut std::io::stdout()).expect("Failed to flush stdout");
                                 }
     
