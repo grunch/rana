@@ -15,6 +15,46 @@ use rana::utils::{benchmark_cores, get_leading_zero_bits, print_divider, print_k
 const DIFFICULTY_DEFAULT: u8 = 10;
 const BECH32_PREFIX: &str = "npub1";
 
+fn calculate_string_similarity(target: &str, candidate: &str) -> f64 {
+    // Get the shorter length of the two strings to avoid index out of bounds
+    let min_len = std::cmp::min(target.len(), candidate.len());
+    
+    // If either string is empty, return 0
+    if min_len == 0 {
+        return 0.0;
+    }
+
+    // Count matching characters at the start of the string
+    let matching = target
+        .chars()
+        .take(min_len)
+        .zip(candidate.chars().take(min_len))
+        .take_while(|(a, b)| a == b)
+        .count();
+    
+    // Calculate similarity as a percentage
+    (matching as f64 / target.len() as f64) * 100.0
+}
+
+#[derive(Clone)]
+struct BestMatch {
+    npub: String,
+    similarity: f64,
+    keys: Keys,
+    mnemonic: Option<Mnemonic>,
+}
+
+impl BestMatch {
+    fn new() -> Self {
+        BestMatch {
+            npub: String::new(),
+            similarity: 0.0,
+            keys: Keys::generate(), // Generate a default key
+            mnemonic: None,
+        }
+    }
+}
+
 fn main() -> Result<()> {
     // Parse CLI arguments
     let parsed_args = CLIArgs::parse();
@@ -31,6 +71,7 @@ fn main() -> Result<()> {
     let num_cores: usize = parsed_args.num_cores;
     let qr: bool = parsed_args.qr;
     let verbose_output: bool = parsed_args.verbose_output;
+    let best_match = Arc::new(Mutex::new(BestMatch::new()));
 
     for vanity_npub_pre in parsed_args.vanity_npub_prefixes_raw_input.split(',') {
         if !vanity_npub_pre.is_empty() {
@@ -121,6 +162,7 @@ fn main() -> Result<()> {
         let vanity_npubs_post_ts = vanity_npubs_post_ts.clone();
         let passphrase = Arc::new(parsed_args.mnemonic_passphrase.clone());
         let iterations = iterations.clone();
+        let best_match = best_match.clone();
 
         thread::spawn(move || {
             let mut rng = rand::thread_rng();
@@ -162,31 +204,61 @@ fn main() -> Result<()> {
 
                     if !vanity_npubs_pre_ts.is_empty() && !vanity_npubs_post_ts.is_empty() {
                         for cur_vanity_npub_pre in vanity_npubs_pre_ts.iter() {
-                            for cur_vanity_npub_post in vanity_npubs_post_ts.iter() {
-                                is_valid_pubkey = bech_key
-                                    .starts_with(&format!("{BECH32_PREFIX}{cur_vanity_npub_pre}"))
-                                    && bech_key.ends_with(cur_vanity_npub_post.as_str());
+                            let current_prefix = bech_key.strip_prefix(BECH32_PREFIX).unwrap_or("");
+                            let similarity = calculate_string_similarity(cur_vanity_npub_pre, current_prefix);
 
-                                if is_valid_pubkey {
-                                    vanity_npub = cur_vanity_npub_pre.clone()
-                                        + "..."
-                                        + cur_vanity_npub_post.clone().as_str();
+                            let mut best_match_guard = best_match.lock().unwrap();
+                            if similarity > best_match_guard.similarity {
+                                best_match_guard.similarity = similarity;
+                                best_match_guard.npub = current_prefix.to_string();
+                                best_match_guard.keys = keys.clone();
+                                best_match_guard.mnemonic = uses_mnemonic.clone();
+    
+                                // Check for any match above 75% but less than 100%
+                                if similarity >= 75.0 && similarity < 100.0 {
+                                    println!("{}", print_divider(30).bright_yellow());
+                                    println!("Target:  {}", cur_vanity_npub_pre);
+                                    println!("Found match with {:.2}% similarity:", similarity);
+                                    print_keys(&keys, current_prefix.to_string(), 0, uses_mnemonic.clone()).unwrap();
+                                    std::io::Write::flush(&mut std::io::stdout()).expect("Failed to flush stdout");
+                                }
+    
+                                // Handle exact match (100% similarity)
+                                if similarity == 100.0 {
+                                    is_valid_pubkey = true;
+                                    vanity_npub = cur_vanity_npub_pre.clone();
                                     break;
                                 }
-                            }
-                            if is_valid_pubkey {
-                                break;
-                            }
+			    }
                         }
                     } else if !vanity_npubs_pre_ts.is_empty() {
-                        for cur_vanity_npub in vanity_npubs_pre_ts.iter() {
-                            is_valid_pubkey =
-                                bech_key.starts_with(&format!("{BECH32_PREFIX}{cur_vanity_npub}"));
+                        for cur_vanity_npub_pre in vanity_npubs_pre_ts.iter() {
+                            let current_prefix = bech_key.strip_prefix(BECH32_PREFIX).unwrap_or("");
+                            let similarity = calculate_string_similarity(cur_vanity_npub_pre, current_prefix);
 
-                            if is_valid_pubkey {
-                                vanity_npub = cur_vanity_npub.clone();
-                                break;
-                            }
+                            let mut best_match_guard = best_match.lock().unwrap();
+                            if similarity > best_match_guard.similarity {
+                                best_match_guard.similarity = similarity;
+                                best_match_guard.npub = current_prefix.to_string();
+                                best_match_guard.keys = keys.clone();
+                                best_match_guard.mnemonic = uses_mnemonic.clone();
+    
+                                // Check for any match above 75% but less than 100%
+                                if similarity >= 75.0 && similarity < 100.0 {
+                                    println!("{}", print_divider(30).bright_yellow());
+                                    println!("Target:  {}", cur_vanity_npub_pre);
+                                    println!("Found match with {:.2}% similarity:", similarity);
+                                    print_keys(&keys, current_prefix.to_string(), 0, uses_mnemonic.clone()).unwrap();
+                                    std::io::Write::flush(&mut std::io::stdout()).expect("Failed to flush stdout");
+                                }
+    
+                                // Handle exact match (100% similarity)
+                                if similarity == 100.0 {
+                                    is_valid_pubkey = true;
+                                    vanity_npub = cur_vanity_npub_pre.clone();
+                                    break;
+                                }
+			    }
                         }
                     } else {
                         for cur_vanity_npub in vanity_npubs_post_ts.iter() {
@@ -219,6 +291,7 @@ fn main() -> Result<()> {
                 if is_valid_pubkey {
                     let _guard = shared_output.lock().unwrap();
                     println!("{}", print_divider(30).bright_cyan());
+                    println!("Found exact match!");
                     print_keys(&keys, vanity_npub, leading_zeroes, uses_mnemonic).unwrap();
                     let iterations = iterations.load(Ordering::Relaxed);
                     let iter_string = format!("{iterations}");

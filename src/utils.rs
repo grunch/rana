@@ -61,6 +61,19 @@ pub fn print_keys(
     Ok(())
 }
 
+pub fn calculate_string_similarity(target: &str, candidate: &str) -> f64 {
+    let min_len = std::cmp::min(target.len(), candidate.len());
+    let matching = target
+        .chars()
+        .zip(candidate.chars())
+        .take(min_len)
+        .filter(|(a, b)| a == b)
+        .count();
+    
+    matching as f64 / target.len() as f64
+}
+
+
 #[inline]
 pub fn get_leading_zero_bits(bytes: &[u8]) -> u8 {
     let mut res = 0_u8;
