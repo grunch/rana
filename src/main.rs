@@ -18,7 +18,7 @@ const BECH32_PREFIX: &str = "npub1";
 fn calculate_string_similarity(target: &str, candidate: &str) -> f64 {
     // Get the shorter length of the two strings to avoid index out of bounds
     let min_len = std::cmp::min(target.len(), candidate.len());
-    
+
     // If either string is empty, return 0
     if min_len == 0 {
         return 0.0;
@@ -31,7 +31,7 @@ fn calculate_string_similarity(target: &str, candidate: &str) -> f64 {
         .zip(candidate.chars().take(min_len))
         .take_while(|(a, b)| a == b)
         .count();
-    
+
     // Calculate similarity as a percentage
     (matching as f64 / target.len() as f64) * 100.0
 }
@@ -135,7 +135,7 @@ fn main() -> Result<()> {
             "Started mining process with a difficulty of: {difficulty} (pow: {pow_difficulty})"
         );
     }
-    
+
     println!("Difficulty scaling: {}", !no_scaling);
 
     // benchmark cores
@@ -208,7 +208,8 @@ fn main() -> Result<()> {
                     if !vanity_npubs_pre_ts.is_empty() && !vanity_npubs_post_ts.is_empty() {
                         for cur_vanity_npub_pre in vanity_npubs_pre_ts.iter() {
                             let current_prefix = bech_key.strip_prefix(BECH32_PREFIX).unwrap_or("");
-                            let similarity = calculate_string_similarity(cur_vanity_npub_pre, current_prefix);
+                            let similarity =
+                                calculate_string_similarity(cur_vanity_npub_pre, current_prefix);
 
                             let mut best_match_guard = best_match.lock().unwrap();
                             if similarity > best_match_guard.similarity {
@@ -216,28 +217,36 @@ fn main() -> Result<()> {
                                 best_match_guard.npub = current_prefix.to_string();
                                 best_match_guard.keys = keys.clone();
                                 best_match_guard.mnemonic = uses_mnemonic.clone();
-    
+
                                 // Check for any match above 75% but less than 100%
-                                if similarity >= 75.0 && similarity < 100.0 {
+                                if (75.0..100.0).contains(&similarity) {
                                     println!("{}", print_divider(30).bright_yellow());
                                     println!("Target:  {}", cur_vanity_npub_pre);
                                     println!("Found match with {:.2}% similarity:", similarity);
-                                    print_keys(&keys, current_prefix.to_string(), 0, uses_mnemonic.clone()).unwrap();
-                                    std::io::Write::flush(&mut std::io::stdout()).expect("Failed to flush stdout");
+                                    print_keys(
+                                        &keys,
+                                        current_prefix.to_string(),
+                                        0,
+                                        uses_mnemonic.clone(),
+                                    )
+                                    .unwrap();
+                                    std::io::Write::flush(&mut std::io::stdout())
+                                        .expect("Failed to flush stdout");
                                 }
-    
+
                                 // Handle exact match (100% similarity)
                                 if similarity == 100.0 {
                                     is_valid_pubkey = true;
                                     vanity_npub = cur_vanity_npub_pre.clone();
                                     break;
                                 }
-			    }
+                            }
                         }
                     } else if !vanity_npubs_pre_ts.is_empty() {
                         for cur_vanity_npub_pre in vanity_npubs_pre_ts.iter() {
                             let current_prefix = bech_key.strip_prefix(BECH32_PREFIX).unwrap_or("");
-                            let similarity = calculate_string_similarity(cur_vanity_npub_pre, current_prefix);
+                            let similarity =
+                                calculate_string_similarity(cur_vanity_npub_pre, current_prefix);
 
                             let mut best_match_guard = best_match.lock().unwrap();
                             if similarity > best_match_guard.similarity {
@@ -245,23 +254,30 @@ fn main() -> Result<()> {
                                 best_match_guard.npub = current_prefix.to_string();
                                 best_match_guard.keys = keys.clone();
                                 best_match_guard.mnemonic = uses_mnemonic.clone();
-    
+
                                 // Check for any match above 75% but less than 100%
                                 if similarity >= 75.0 && similarity < 100.0 {
                                     println!("{}", print_divider(30).bright_yellow());
                                     println!("Target:  {}", cur_vanity_npub_pre);
                                     println!("Found match with {:.2}% similarity:", similarity);
-                                    print_keys(&keys, current_prefix.to_string(), 0, uses_mnemonic.clone()).unwrap();
-                                    std::io::Write::flush(&mut std::io::stdout()).expect("Failed to flush stdout");
+                                    print_keys(
+                                        &keys,
+                                        current_prefix.to_string(),
+                                        0,
+                                        uses_mnemonic.clone(),
+                                    )
+                                    .unwrap();
+                                    std::io::Write::flush(&mut std::io::stdout())
+                                        .expect("Failed to flush stdout");
                                 }
-    
+
                                 // Handle exact match (100% similarity)
                                 if similarity == 100.0 {
                                     is_valid_pubkey = true;
                                     vanity_npub = cur_vanity_npub_pre.clone();
                                     break;
                                 }
-			    }
+                            }
                         }
                     } else {
                         for cur_vanity_npub in vanity_npubs_post_ts.iter() {
@@ -314,7 +330,10 @@ fn main() -> Result<()> {
                     std::io::Write::flush(&mut std::io::stdout()).expect("Failed to flush stdout");
                 } else if verbose_output {
                     let non_matching_key = keys.public_key().to_string();
-                    print!("Non-matching public key generated: {}\r", non_matching_key.red());
+                    print!(
+                        "Non-matching public key generated: {}\r",
+                        non_matching_key.red()
+                    );
                     std::io::Write::flush(&mut std::io::stdout()).expect("Failed to flush stdout");
                 }
             }
