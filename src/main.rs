@@ -65,6 +65,7 @@ fn main() -> Result<()> {
     }
 
     let mut difficulty: u8 = parsed_args.difficulty;
+    let no_scaling: bool = parsed_args.no_scaling;
     let vanity_prefix: String = parsed_args.vanity_prefix;
     let mut vanity_npub_prefixes: Vec<String> = Vec::new();
     let mut vanity_npub_suffixes: Vec<String> = Vec::new();
@@ -134,6 +135,8 @@ fn main() -> Result<()> {
             "Started mining process with a difficulty of: {difficulty} (pow: {pow_difficulty})"
         );
     }
+    
+    println!("Difficulty scaling: {}", !no_scaling);
 
     // benchmark cores
     if !vanity_npub_prefixes.is_empty() || !vanity_npub_suffixes.is_empty() {
@@ -274,7 +277,7 @@ fn main() -> Result<()> {
                     // difficulty search
                     leading_zeroes = get_leading_zero_bits(&keys.public_key().serialize());
                     is_valid_pubkey = leading_zeroes > best_diff.load(Ordering::Relaxed);
-                    if is_valid_pubkey {
+                    if is_valid_pubkey && !no_scaling {
                         // update difficulty only if it was set in the first place
                         if best_diff.load(Ordering::Relaxed) > 0 {
                             best_diff
